@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Immuvi Command Center</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Supabase JS client (v2) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/matrix.css">
+  <link rel="stylesheet" href="css/modals.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="hdr">
+    <div class="hdr-inner">
+      <div class="hdr-logo">
+        <div>
+          <div class="hdr-logo-name">Immuvi Command Center</div>
+          <div class="hdr-logo-sub">Kids Mental Health Creative Ops</div>
+        </div>
+        <!-- Product Switcher Pill -->
+        <div class="hdr-prod-wrap" id="hdrProdWrap">
+          <button class="hdr-prod-btn" id="hdrProdBtn" onclick="toggleHdrProdSwitcher(event)">
+            <span class="hdr-prod-dot" id="hdrProdDot"></span>
+            <span id="hdrProdName">No Product</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" style="opacity:.5;flex-shrink:0"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="hdr-prod-dd" id="hdrProdDd"></div>
+        </div>
+      </div>
+      <div class="hdr-right">
+        <input type="text" class="api-inp" id="apiKeyInput" placeholder="ClickUp API Key" />
+        <button class="btn-sync" onclick="syncClickUp()">Sync ClickUp</button>
+        <button class="btn-ghost btn-sm" onclick="if(confirm('Reset all data to seed defaults? This cannot be undone.')) resetToSeedData()" title="Clear saved data and reload from defaults" style="font-size:0.65rem;padding:4px 8px;color:var(--t3)">&#8635; Reset</button>
+        <div class="live-sync-bar" id="liveSyncBar">
+          <span class="live-dot" id="statusDot"></span>
+          <span class="live-sync-lbl" id="statusLbl">Not synced</span>
+          <button class="btn-sync-now" id="syncNowBtn" onclick="triggerManualSync()" title="Sync now">&#8635;</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== TAB BAR ===== -->
+  <nav class="tabs-wrap">
+    <div class="tabs" role="tablist">
+      <button class="tab on" onclick="showTab('hq',this)" role="tab" aria-selected="true">Command HQ</button>
+      <button class="tab" onclick="showTab('angles',this)" role="tab" aria-selected="false">Angles <span class="tab-count" id="anglesCount">0</span></button>
+      <button class="tab" onclick="showTab('personas',this)" role="tab" aria-selected="false">Personas <span class="tab-count" id="personasCount">0</span></button>
+      <button class="tab" onclick="showTab('creatives',this)" role="tab" aria-selected="false">Creative Tracker <span class="tab-count" id="creativesCount">0</span></button>
+      <button class="tab" onclick="showTab('matrix',this)" role="tab" aria-selected="false">Creative Matrix <span class="tab-count" id="matrixCount">0</span></button>
+      <button class="tab" onclick="showTab('actions',this)" role="tab" aria-selected="false">Action Plan <span class="tab-count" id="actionsCount">0</span></button>
+      <button class="tab" onclick="showTab('production',this)" role="tab" aria-selected="false">Production <span class="tab-count" id="prodCount">0</span></button>
+      <button class="tab" onclick="showTab('inspiration',this)" role="tab" aria-selected="false">Inspiration <span class="tab-count" id="inspirationCount">0</span></button>
+    </div>
+  </nav>
+
+  <!-- ===== PANEL 1: COMMAND HQ ===== -->
+  <section id="panel-hq" class="panel on" role="tabpanel">
+    <div class="product-profile-section" id="productProfileSection"></div>
+    <div id="kpiStrip"></div>
+    <div class="sh" style="margin-top:20px">Coverage Intelligence</div>
+    <div class="cov-grid" id="covGrid"></div>
+    <div class="sh" style="margin-top:20px">Gap Analysis</div>
+    <div id="gapBox"></div>
+  </section>
+
+  <!-- ===== PANEL 2: ANGLES ===== -->
+  <section id="panel-angles" class="panel" role="tabpanel">
+    <div class="flex-between mb-16">
+      <div class="sh" style="margin:0;border:0;padding:0">Angle Tracker</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-ghost btn-sm merge-btn" onclick="openMergeAnglesModal()" title="Combine similar angles into one">⇢ Merge Angles</button>
+        <button class="btn-add btn-sm" onclick="addAngleRow()">+ Add Angle</button>
+      </div>
+    </div>
+    <div class="summary-strip" id="anglesSummary"></div>
+    <table class="dtbl" id="anglesTable">
+      <thead>
+        <tr>
+          <th style="width:40px">#</th>
+          <th>Angle Name</th>
+          <th style="width:130px">Status</th>
+          <th>Source Link</th>
+          <th>Notes</th>
+          <th style="width:80px">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="anglesBody"></tbody>
+    </table>
+  </section>
+
+  <!-- ===== PANEL 3: PERSONAS ===== -->
+  <section id="panel-personas" class="panel" role="tabpanel">
+    <div class="flex-between mb-16">
+      <div class="sh" style="margin:0;border:0;padding:0">Persona Tracker</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-ghost btn-sm merge-btn" onclick="openMergePersonasModal()" title="Combine similar personas into one">⇢ Merge Personas</button>
+        <button class="btn-add btn-sm" onclick="addPersonaRow()">+ Add Persona</button>
+      </div>
+    </div>
+    <div class="summary-strip" id="personasSummary"></div>
+    <table class="dtbl" id="personasTable">
+      <thead>
+        <tr>
+          <th style="width:40px">#</th>
+          <th>Persona Name</th>
+          <th style="width:130px">Status</th>
+          <th>Source Link</th>
+          <th>Notes</th>
+          <th style="width:80px">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="personasBody"></tbody>
+    </table>
+  </section>
+
+  <!-- ===== PANEL 4: CREATIVE TRACKER ===== -->
+  <section id="panel-creatives" class="panel" role="tabpanel">
+    <div class="flex-between mb-16">
+      <div class="sh" style="margin:0;border:0;padding:0">Creative Tracker</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-ghost btn-sm" onclick="pushAllToClickUp()" style="font-size:0.68rem">↑ Push All to ClickUp</button>
+        <button class="btn-add btn-sm" onclick="openAddCreative()">+ Add Creative</button>
+      </div>
+    </div>
+    <div class="task-type-toggle" id="taskTypeToggle">
+      <button class="tt-btn active" data-type="" onclick="setTrackerTaskType('')">All</button>
+      <button class="tt-btn" data-type="format" onclick="setTrackerTaskType('format')">📐 Formats</button>
+      <button class="tt-btn" data-type="production" onclick="setTrackerTaskType('production')">🎬 Production</button>
+    </div>
+    <div class="filter-bar" id="filterBar">
+      <select class="fs" id="fAngle" onchange="applyFilters()"><option value="">All Angles</option></select>
+      <select class="fs" id="fPersona" onchange="applyFilters()"><option value="">All Personas</option></select>
+      <select class="fs" id="fFormat" onchange="applyFilters()"><option value="">All Formats</option></select>
+      <select class="fs" id="fStructure" onchange="applyFilters()"><option value="">All Structures</option></select>
+      <select class="fs" id="fHook" onchange="applyFilters()"><option value="">All Hooks</option></select>
+      <select class="fs" id="fProduction" onchange="applyFilters()"><option value="">All Production</option></select>
+      <select class="fs" id="fAdType" onchange="applyFilters()"><option value="">All Ad Types</option></select>
+      <select class="fs" id="fFunnel" onchange="applyFilters()">
+        <option value="">All Funnels</option>
+        <option value="TOF">TOF</option>
+        <option value="MOF">MOF</option>
+        <option value="BOF">BOF</option>
+      </select>
+      <select class="fs" id="fStatus" onchange="applyFilters()">
+        <option value="">All Statuses</option>
+        <option value="Untested">Untested</option>
+        <option value="Approved">Approved</option>
+        <option value="In Production">In Production</option>
+        <option value="Ready to Launch">Ready to Launch</option>
+        <option value="Testing">Testing</option>
+        <option value="Winner">Winner</option>
+        <option value="Loser">Loser</option>
+        <option value="Scale">Scale</option>
+        <option value="Complete">Complete</option>
+      </select>
+      <select class="fs" id="fDate" onchange="applyFilters()">
+        <option value="">All Time</option>
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month">This Month</option>
+      </select>
+    </div>
+    <table class="dtbl" id="creativesTable">
+      <thead>
+        <tr>
+          <th onclick="setSort('formatName')">Format Name</th>
+          <th onclick="setSort('angle')">Angle</th>
+          <th onclick="setSort('persona')">Persona</th>
+          <th onclick="setSort('creativeStructure')">Structure</th>
+          <th onclick="setSort('hookType')">Hook</th>
+          <th onclick="setSort('productionStyle')">Production</th>
+          <th onclick="setSort('creativeHypothesis')">Hypothesis</th>
+          <th onclick="setSort('adLink')">Inspiration Link</th>
+          <th onclick="setSort('driveLink')">Drive Link</th>
+          <th onclick="setSort('adType')">Ad Type</th>
+          <th onclick="setSort('funnelStage')">Funnel</th>
+          <th onclick="setSort('status')">Status</th>
+          <th onclick="setSort('dateCreated')" title="Sort by date created">Created</th>
+          <th>Variations</th>
+          <th>Matrix Usage</th>
+          <th style="width:70px">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="creativesBody"></tbody>
+    </table>
+  </section>
+
+  <!-- ===== PANEL 5: CREATIVE MATRIX ===== -->
+  <section id="panel-matrix" class="panel" role="tabpanel">
+    <div id="matrixGrid"></div>
+  </section>
+
+  <!-- ===== PANEL 6: ACTION PLAN ===== -->
+  <section id="panel-actions" class="panel" role="tabpanel">
+    <div class="flex-between mb-16">
+      <div class="sh" style="margin:0;border:0;padding:0">Action Plan</div>
+    </div>
+    <div class="action-toolbar" id="actionToolbar">
+      <label><input type="checkbox" id="selectAllActions" onchange="toggleSelectAll(this.checked)"> Select All</label>
+      <span class="action-count" id="selectedCount">0 selected</span>
+      <button class="btn-ghost btn-sm" id="btnBulkDate" onclick="openBulkDateModal()" disabled>Bulk Set Date</button>
+      <button class="btn-add btn-sm" id="btnBulkClickUp" onclick="bulkCreateClickUp()" disabled>Create in ClickUp</button>
+      <span class="ap-create-progress" id="apBulkProgress"></span>
+    </div>
+    <div id="actionsContainer"></div>
+  </section>
+
+  <!-- ===== PANEL 7: PRODUCTION ===== -->
+  <section id="panel-production" class="panel" role="tabpanel">
+    <div class="flex-between mb-16">
+      <div class="sh" style="margin:0;border:0;padding:0">Production Board</div>
+      <button class="btn-add btn-sm" onclick="openAddProdTask()">+ Add Task</button>
+    </div>
+    <div class="prod-kanban" id="prodKanban">
+      <div class="prod-col" data-status="to do">
+        <div class="prod-col-hdr">
+          <div>
+            <span class="prod-col-title">In Queue</span>
+            <div class="prod-col-sub" style="font-size:0.6rem;color:var(--t3);margin-top:1px">Untested / Approved</div>
+          </div>
+          <span class="prod-col-count" id="prodQueueCount">0</span>
+        </div>
+        <div class="prod-col-body" data-status="to do"
+             ondragover="handleProdDragOver(event)" ondragleave="handleProdDragLeave(event)" ondrop="handleProdDrop(event)"
+             id="prodQueueBody"></div>
+      </div>
+      <div class="prod-col" data-status="in progress">
+        <div class="prod-col-hdr">
+          <div>
+            <span class="prod-col-title">In Production</span>
+            <div class="prod-col-sub" style="font-size:0.6rem;color:var(--t3);margin-top:1px">In Production / Ready to Launch / Testing</div>
+          </div>
+          <span class="prod-col-count" id="prodProgressCount">0</span>
+        </div>
+        <div class="prod-col-body" data-status="in progress"
+             ondragover="handleProdDragOver(event)" ondragleave="handleProdDragLeave(event)" ondrop="handleProdDrop(event)"
+             id="prodProgressBody"></div>
+      </div>
+      <div class="prod-col" data-status="complete">
+        <div class="prod-col-hdr">
+          <div>
+            <span class="prod-col-title">Done</span>
+            <div class="prod-col-sub" style="font-size:0.6rem;color:var(--t3);margin-top:1px">Winner / Scale / Complete / Loser</div>
+          </div>
+          <span class="prod-col-count" id="prodDoneCount">0</span>
+        </div>
+        <div class="prod-col-body" data-status="complete"
+             ondragover="handleProdDragOver(event)" ondragleave="handleProdDragLeave(event)" ondrop="handleProdDrop(event)"
+             id="prodDoneBody"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PANEL 8: INSPIRATION ===== -->
+  <section id="panel-inspiration" class="panel" role="tabpanel">
+    <div class="ins-toolbar">
+      <input type="text" id="insUrlInput" class="ins-url-input" placeholder="Paste Facebook / Instagram / TikTok / YouTube URL..." onkeydown="if(event.key==='Enter')addToInsQueue()" />
+      <button class="ins-classify-btn" id="insAddBtn" onclick="addToInsQueue()">
+        <span class="btn-label">+ Add to Queue</span>
+      </button>
+      <button class="ins-process-btn" id="insProcessBtn" onclick="processAllWithClaude()">
+        <span>⚡ Process All with Claude</span>
+        <span id="insQueueCount" style="background:rgba(255,255,255,0.25);border-radius:10px;padding:1px 7px;font-size:0.7rem;display:none">0</span>
+      </button>
+      <button class="btn-ghost" onclick="importClassificationResults()">↓ Import Results</button>
+      <button class="btn-ghost" onclick="showAddInspirationModal()">+ Manual</button>
+      <button class="btn-ghost" onclick="openProductPicker()" title="Browse and import inspirations from other products">🔀 Other Products</button>
+      <span id="insServerBadge" class="ins-server-badge checking" onclick="checkBridgeStatus()" style="cursor:pointer" title="Bridge server status — click to refresh">● checking</span>
+    </div>
+    <div id="insStatusIndicator" class="ins-status-indicator"></div>
+    <div class="ins-filter-bar">
+      <select id="insFiltPlatform" onchange="renderInspirations()">
+        <option value="">All Platforms</option>
+        <option>Facebook</option><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Other</option>
+      </select>
+      <select id="insFiltFormat" onchange="renderInspirations()">
+        <option value="">All Formats</option>
+        <option>Airplane Window Text</option><option>WhatsApp Chat Scroll</option><option>Hand Draw Reveal</option>
+        <option>Couple Overlay Labels</option><option>Comment Reply Sticker</option><option>Typewriter Text Build</option>
+        <option>Card Flip Reveal</option><option>POV Palm Reading</option><option>AI Portrait Generation</option><option>Other</option>
+      </select>
+      <select id="insFiltStatus" onchange="renderInspirations()">
+        <option value="">All Statuses</option>
+        <option>Saved</option><option>Classified</option><option>Briefed</option><option>Live</option><option>Winner</option><option>Loser</option>
+      </select>
+      <select id="insFiltHook" onchange="renderInspirations()">
+        <option value="">All Hook Types</option>
+        <option>Curiosity</option><option>Fear</option><option>Social Proof</option><option>Aspirational</option>
+        <option>Direct Offer</option><option>POV</option><option>Question</option><option>Pattern Interrupt</option>
+      </select>
+      <input type="text" id="insFiltSearch" class="ins-url-input" style="max-width:180px;padding:6px 10px;" placeholder="Search..." oninput="renderInspirations()" />
+    </div>
+    <div class="ins-table-wrap">
+      <table class="ins-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Format Name</th>
+            <th>Brand</th>
+            <th>Angle</th>
+            <th>Persona</th>
+            <th>Structure</th>
+            <th>Hook</th>
+            <th>Production</th>
+            <th>Funnel</th>
+            <th>Ad Type</th>
+            <th>Platform</th>
+            <th>Hypothesis</th>
+            <th>Notes</th>
+            <th>Ad Copy</th>
+            <th>Source Link</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Cells Used</th>
+            <th>Brief</th>
+            <th>Tags</th>
+            <th>Reuse</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="insTbody"></tbody>
+      </table>
+    </div>
+    <div id="insEmpty" class="ins-empty" style="display:none">
+      <div class="ins-empty-title">No inspirations yet</div>
+      <div class="ins-empty-sub">Paste a competitor ad URL above and click "+ Add to Queue", then "Process All with Claude"</div>
+    </div>
+  </section>
+
+  <!-- ===== MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal" id="modalDialog">
+      <div class="modal-head">
+        <span id="modalTitle">Modal</span>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-foot" id="modalFoot"></div>
+    </div>
+  </div>
+
+  <!-- ===== STAT POPUP (creatives / persona detail) ===== -->
+  <div id="statPopupBg" class="stat-popup-bg" style="display:none" onclick="closeStatPopup()"></div>
+  <div id="statPopup" class="stat-popup" style="display:none">
+    <div class="stat-popup-hd">
+      <div>
+        <div class="stat-popup-hd-title" id="statPopupTitle">Details</div>
+        <div class="stat-popup-hd-sub" id="statPopupSub"></div>
+      </div>
+      <button class="stat-popup-close" onclick="closeStatPopup()">&#215;</button>
+    </div>
+    <div class="stat-popup-body" id="statPopupBody"></div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <!-- ===== INSPIRATION CELL TOOLTIP ===== -->
+  <div id="insTooltip"></div>
+
+  <!-- ===== LOADING OVERLAY ===== -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loadingText">Loading...</div>
+  </div>
+
+  <script src="js/core/config.js"></script>
+  <script src="js/core/utils.js"></script>
+  <script src="js/core/ui.js"></script>
+  <script src="js/core/processing.js"></script>
+  <script src="js/core/db.js"></script>
+  <script src="js/features/hq.js"></script>
+  <script src="js/features/angles.js"></script>
+  <script src="js/features/personas.js"></script>
+  <script src="js/features/creatives.js"></script>
+  <script src="js/features/winners.js"></script>
+  <script src="js/features/actions.js"></script>
+  <script src="js/features/production.js"></script>
+  <script src="js/features/mutations.js"></script>
+  <script src="js/features/winner-actions.js"></script>
+  <script src="js/features/sort-filter.js"></script>
+  <script src="js/features/dnd.js"></script>
+  <script src="js/features/bulk.js"></script>
+  <script src="js/features/field-options.js"></script>
+  <script src="js/features/matrix.js"></script>
+  <script src="js/features/inspiration.js"></script>
+  <script src="js/integrations/clickup.js"></script>
+  <script src="js/core/sync.js"></script>
+  <script src="js/core/cloud.js"></script>
+</body>
+</html>

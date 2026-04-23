@@ -1,0 +1,21 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/immuvi-command-center.html" },
+    { "source": "/install-skill.sh", "destination": "/team-skill/install-skill.sh" }
+  ],
+  "headers": [
+    {
+      "source": "/install-skill.sh",
+      "headers": [
+        { "key": "Content-Type", "value": "text/x-shellscript; charset=utf-8" },
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/team-skill/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
+  ]
+}

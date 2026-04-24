@@ -11,6 +11,17 @@ const FUNNEL_FORMAT_SUGGESTIONS = {
 };
 const PRIORITY = { WINNER_ADJACENT: 1, WINNING_ELEMENT: 2, COLD: 3 };
 
+// Winner Variations — 5 element-isolation tests spawned from each winner ad.
+// Tier (Massive / Good / Mild) is read from parent.winnerTier if present;
+// falls back to 'normal' priority when absent (no tier system yet in WINNERS).
+var WINNER_VARIATION_TYPES = [
+  { key: 'Visual Hook', desc: 'Test a new opening visual while keeping the same hook line and body' },
+  { key: 'Hook Line',   desc: 'Test a new spoken/text hook while keeping the same visual and body' },
+  { key: 'Body',        desc: 'Test a new body sequence while keeping the same hook' },
+  { key: 'CTA',         desc: 'Test a new call-to-action end card while keeping the hook and body' },
+  { key: 'Music',       desc: 'Test a new background track while keeping all other elements' }
+];
+
 function renderAll() {
   renderHQ();
   renderProductProfile();
@@ -155,6 +166,9 @@ function renderHQ() {
 
   // Gap Box — Next Tests recommender (renderGapBox defined below)
   renderGapBox(ADS, ANGLES, PERSONAS);
+
+  // Winner Variations — 5-element isolation tasks per winner ad
+  renderWinnerVariations(WINNERS);
 
   renderProductProfile();
 }
@@ -637,5 +651,468 @@ function hashStr(s) {
     h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   }
   return Math.abs(h);
+}
+
+// ── 4a-2. WINNER VARIATIONS ──
+
+function renderWinnerVariations(winners) {
+  winners = winners || (typeof WINNERS !== 'undefined' ? WINNERS : []);
+  var el = document.getElementById('winnerVariationsBox');
+  if (!el) return;
+
+  var actions = (typeof MANUAL_ACTIONS !== 'undefined' && Array.isArray(MANUAL_ACTIONS)) ? MANUAL_ACTIONS : [];
+
+  // Build a per-winner index of already-created variation types
+  function createdTypesFor(parentId) {
+    var found = {};
+    for (var mi = 0; mi < actions.length; mi++) {
+      var ma = actions[mi];
+      if (ma && ma.sourceAdId === parentId && ma.tag && String(ma.tag).indexOf('winner-variation') !== -1) {
+        if (ma.variationType) found[ma.variationType] = true;
+      }
+    }
+    return found;
+  }
+
+  // Count pending across all winners (for the header badge)
+  var totalPending = 0;
+  for (var wi = 0; wi < winners.length; wi++) {
+    var wEntry = winners[wi];
+    if (!wEntry || !wEntry.parent) continue;
+    var created = createdTypesFor(wEntry.parent.id);
+    for (var ti = 0; ti < WINNER_VARIATION_TYPES.length; ti++) {
+      if (!created[WINNER_VARIATION_TYPES[ti].key]) totalPending++;
+    }
+  }
+
+  var html = '<div class="winner-variations-wrapper">';
+  html += renderWinnerVariationsStyle();
+
+  html +=
+    '<div class="wv-header">' +
+      '<h3 class="wv-title">Winner Variations</h3>' +
+      '<span class="wv-pending-badge">' + mono(totalPending) + ' pending</span>' +
+    '</div>';
+
+  if (!winners || !winners.length) {
+    html += '<div class="wv-empty">No winner ads yet — once an ad reaches Winner status, variation suggestions will appear here.</div>';
+    html += '</div>';
+    el.innerHTML = html;
+    return;
+  }
+
+  for (var wi2 = 0; wi2 < winners.length; wi2++) {
+    var w = winners[wi2];
+    if (!w || !w.parent) continue;
+    var p = w.parent;
+    var tier = (p.winnerTier || '').trim();
+    var tierCls = tier === 'Massive' ? 'wv-tier-massive' :
+                  tier === 'Good'    ? 'wv-tier-good' :
+                  tier === 'Mild'    ? 'wv-tier-mild' : '';
+    var funnel = (p.funnelStage || '').toUpperCase();
+    var createdMap = createdTypesFor(p.id);
+    var createdCount = 0;
+    for (var ck in createdMap) if (Object.prototype.hasOwnProperty.call(createdMap, ck)) createdCount++;
+    var pct = Math.round(createdCount / WINNER_VARIATION_TYPES.length * 100);
+    var remaining = WINNER_VARIATION_TYPES.length - createdCount;
+
+    html += '<div class="wv-card" data-winner-id="' + esc(p.id) + '">';
+
+    // Header row
+    html += '<div class="wv-card-head">';
+    html += '<div class="wv-card-title">' + esc(p.formatName || p.id) + '</div>';
+    if (tierCls) html += '<span class="wv-tier-badge ' + tierCls + '">' + esc(tier) + ' Winner</span>';
+    if (funnel) html += '<span class="wv-funnel-tag wv-funnel-' + funnel + '">' + funnel + '</span>';
+    if (p.angle)   html += '<span class="wv-meta">Angle: ' + esc(p.angle) + '</span>';
+    if (p.persona) html += '<span class="wv-meta">Persona: ' + esc(p.persona) + '</span>';
+    html += '</div>';
+
+    // Progress bar
+    html += '<div class="wv-progress">' +
+      '<div class="wv-progress-bar"><div class="wv-progress-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="wv-progress-text">' + mono(createdCount) + ' / ' + mono(WINNER_VARIATION_TYPES.length) + ' variations</div>' +
+    '</div>';
+
+    // 5 variation rows
+    html += '<div class="wv-rows">';
+    for (var ti2 = 0; ti2 < WINNER_VARIATION_TYPES.length; ti2++) {
+      var vt = WINNER_VARIATION_TYPES[ti2];
+      var queued = !!createdMap[vt.key];
+      html += '<div class="wv-row">';
+      html +=   '<div class="wv-row-elem">' + esc(vt.key) + '</div>';
+      html +=   '<div class="wv-row-desc">' + esc(vt.desc) + '</div>';
+      html +=   '<div class="wv-row-action">';
+      if (queued) {
+        html += '<button type="button" class="wv-create-btn wv-queued" disabled>&#10003; Queued</button>';
+      } else {
+        html += '<button type="button" class="wv-create-btn" ' +
+                  'data-winner-id="' + esc(p.id) + '" ' +
+                  'data-var-type="' + esc(vt.key) + '">Create Task</button>';
+      }
+      html +=   '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Create All Remaining row
+    html += '<div class="wv-all-row">';
+    if (remaining > 0) {
+      html += '<button type="button" class="wv-all-btn" data-winner-id="' + esc(p.id) + '">Create All Remaining (' + mono(remaining) + ')</button>';
+    } else {
+      html += '<span class="wv-all-done">&#10003; All 5 variations queued</span>';
+    }
+    html += '</div>';
+
+    html += '</div>'; // .wv-card
+  }
+
+  html += '</div>'; // .winner-variations-wrapper
+  el.innerHTML = html;
+
+  // Wire per-row Create Task buttons
+  var createBtns = el.querySelectorAll('.wv-create-btn:not(.wv-queued)');
+  for (var bi = 0; bi < createBtns.length; bi++) {
+    createBtns[bi].addEventListener('click', function(e) {
+      var btn = e.currentTarget;
+      if (btn.disabled) return;
+      var wid = btn.getAttribute('data-winner-id');
+      var vtKey = btn.getAttribute('data-var-type');
+      var winner = findWinnerById(wid);
+      if (!winner) return;
+      createWinnerVariationTask(winner, vtKey, btn, null);
+    });
+  }
+
+  // Wire Create All Remaining buttons
+  var allBtns = el.querySelectorAll('.wv-all-btn');
+  for (var ai = 0; ai < allBtns.length; ai++) {
+    allBtns[ai].addEventListener('click', function(e) {
+      var btn = e.currentTarget;
+      if (btn.disabled) return;
+      var wid = btn.getAttribute('data-winner-id');
+      var winner = findWinnerById(wid);
+      if (!winner) return;
+      createAllRemainingForWinner(winner, btn);
+    });
+  }
+}
+
+function findWinnerById(id) {
+  if (typeof WINNERS === 'undefined' || !Array.isArray(WINNERS)) return null;
+  for (var i = 0; i < WINNERS.length; i++) {
+    if (WINNERS[i] && WINNERS[i].parent && WINNERS[i].parent.id === id) return WINNERS[i];
+  }
+  return null;
+}
+
+function winnerVariationExists(parentId, varType) {
+  if (typeof MANUAL_ACTIONS === 'undefined' || !Array.isArray(MANUAL_ACTIONS)) return false;
+  for (var i = 0; i < MANUAL_ACTIONS.length; i++) {
+    var ma = MANUAL_ACTIONS[i];
+    if (ma && ma.sourceAdId === parentId &&
+        ma.tag && String(ma.tag).indexOf('winner-variation') !== -1 &&
+        ma.variationType === varType) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getWinnerVariationPriority(tier) {
+  if (tier === 'Massive') return 'urgent';
+  if (tier === 'Good')    return 'high';
+  return 'normal'; // Mild + unknown both map here
+}
+
+function createWinnerVariationTask(winner, varType, btn, onDone) {
+  if (!winner || !winner.parent) { if (onDone) onDone(false); return; }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.remove('wv-success', 'wv-failed');
+    btn.classList.add('wv-creating');
+    btn.textContent = 'Creating…';
+  }
+
+  if (typeof MANUAL_ACTIONS === 'undefined' || typeof createClickUpTaskFromAction !== 'function') {
+    console.error('[winnerVariations] MANUAL_ACTIONS or createClickUpTaskFromAction unavailable');
+    if (btn) {
+      btn.classList.remove('wv-creating');
+      btn.classList.add('wv-failed');
+      btn.textContent = '✗ Failed';
+      btn.disabled = false;
+    }
+    if (onDone) onDone(false);
+    return;
+  }
+
+  var p = winner.parent;
+  var tier = (p.winnerTier || '').trim();
+  var priorityStr = getWinnerVariationPriority(tier);
+  var vtObj = null;
+  for (var ti = 0; ti < WINNER_VARIATION_TYPES.length; ti++) {
+    if (WINNER_VARIATION_TYPES[ti].key === varType) { vtObj = WINNER_VARIATION_TYPES[ti]; break; }
+  }
+  var descText = (vtObj && vtObj.desc) || '';
+
+  // [VAR] prefix is in-app display only — bulk.js:238 rewrites the ClickUp name
+  // to the standardized "angle - ICP: persona - funnel - format" form.
+  var newAction = {
+    id: 'manual-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    priority: priorityStr,
+    title: '[VAR][' + varType + '] ' + (p.angle || '') + ' × ' + (p.persona || '') + ' — ' + (p.funnelStage || ''),
+    reason: 'Winner variation test: change ' + varType + ' on winner ' + p.id,
+    tag: 'winner-variation',
+    angle: p.angle || '',
+    persona: p.persona || '',
+    funnelStage: p.funnelStage || '',
+    format: p.formatName || '',
+    dueDate: typeof todayISO === 'function' ? todayISO() : new Date().toISOString().split('T')[0],
+    description: descText,
+    adId: p.id,
+    adLink: p.adLink || '',
+    _clickupId: null,
+    liveStatus: 'Untested',
+    sourceAdId: p.id,
+    sourceAngle: p.angle || '',
+    sourcePersona: p.persona || '',
+    isWinnerVariation: true,
+    variationType: varType
+  };
+  MANUAL_ACTIONS.push(newAction);
+  if (typeof saveState === 'function')            saveState();
+  if (typeof genActions === 'function')           genActions();
+  if (typeof rebuildProdFromManual === 'function') rebuildProdFromManual();
+  if (typeof renderActionPlan === 'function')     renderActionPlan();
+  if (typeof renderProduction === 'function')     renderProduction();
+
+  createClickUpTaskFromAction(newAction.id, function(ok) {
+    if (btn) {
+      btn.classList.remove('wv-creating');
+      if (ok) {
+        btn.classList.add('wv-success');
+        btn.textContent = '✓ Created';
+      } else {
+        btn.classList.add('wv-failed');
+        btn.textContent = '✗ Failed';
+        btn.disabled = false;
+        console.error('[winnerVariations] createClickUpTaskFromAction failed for', newAction.id);
+      }
+    }
+    if (onDone) onDone(!!ok);
+  });
+}
+
+function createAllRemainingForWinner(winner, allBtn) {
+  if (!winner || !winner.parent) return;
+  var p = winner.parent;
+
+  var pending = [];
+  for (var ti = 0; ti < WINNER_VARIATION_TYPES.length; ti++) {
+    var vtKey = WINNER_VARIATION_TYPES[ti].key;
+    if (!winnerVariationExists(p.id, vtKey)) pending.push(vtKey);
+  }
+  if (pending.length === 0) {
+    allBtn.disabled = true;
+    allBtn.textContent = '✓ All Created';
+    return;
+  }
+
+  allBtn.disabled = true;
+  allBtn.classList.add('wv-creating');
+
+  var idx = 0;
+  var total = pending.length;
+  var allOk = true;
+
+  function next() {
+    if (idx >= pending.length) {
+      allBtn.classList.remove('wv-creating');
+      allBtn.textContent = allOk ? '✓ All Created' : 'Some tasks failed';
+      // Re-render so the per-row "Queued" badges reflect reality and progress bar updates
+      if (typeof renderWinnerVariations === 'function') {
+        renderWinnerVariations(typeof WINNERS !== 'undefined' ? WINNERS : []);
+      }
+      return;
+    }
+    var vtKey = pending[idx];
+    allBtn.textContent = 'Creating ' + (idx + 1) + '/' + total + '…';
+    createWinnerVariationTask(winner, vtKey, null, function(ok) {
+      if (!ok) allOk = false;
+      idx++;
+      // 300ms pause between sequential ClickUp task creates to avoid rate-limiting
+      setTimeout(next, 300);
+    });
+  }
+  next();
+}
+
+function renderWinnerVariationsStyle() {
+  // Scoped under .winner-variations-wrapper. Uses only real app tokens
+  // (--card, --b, --t1/t2/t3, --test, --holo, --r, --rs) + hardcoded palette
+  // for tier/funnel pills and state colors.
+  return (
+    '<style>' +
+
+    /* ── Wrapper card ── */
+    '.winner-variations-wrapper{' +
+      'background:var(--card);' +
+      'border:1px solid var(--b);' +
+      'border-radius:var(--r);' +
+      'box-shadow:0 1px 3px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.02);' +
+      'overflow:hidden;margin-top:16px;' +
+      'color:var(--t1);font-family:inherit;position:relative;' +
+    '}' +
+    '.winner-variations-wrapper::before{' +
+      'content:"";position:absolute;top:0;left:0;right:0;height:2px;' +
+      'background:var(--holo);pointer-events:none;z-index:2;' +
+    '}' +
+
+    /* ── Header ── */
+    '.winner-variations-wrapper .wv-header{' +
+      'display:flex;align-items:center;gap:10px;' +
+      'padding:16px 18px 14px;' +
+      'border-bottom:1px solid var(--b);' +
+    '}' +
+    '.winner-variations-wrapper .wv-title{' +
+      'margin:0;font-size:0.85rem;font-weight:600;color:var(--t1);' +
+    '}' +
+    '.winner-variations-wrapper .wv-pending-badge{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 9px;border-radius:10px;' +
+      'background:var(--test);color:#fff;' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;' +
+    '}' +
+
+    /* ── Empty state ── */
+    '.winner-variations-wrapper .wv-empty{' +
+      'padding:32px 20px;text-align:center;' +
+      'color:var(--t3);font-size:0.82rem;' +
+    '}' +
+
+    /* ── Winner card ── */
+    '.winner-variations-wrapper .wv-card{' +
+      'padding:16px 20px;border-bottom:1px solid var(--b);' +
+    '}' +
+    '.winner-variations-wrapper .wv-card:last-child{border-bottom:none;}' +
+    '.winner-variations-wrapper .wv-card-head{' +
+      'display:flex;flex-wrap:wrap;align-items:center;gap:10px;' +
+      'margin-bottom:12px;' +
+    '}' +
+    '.winner-variations-wrapper .wv-card-title{' +
+      'font-size:0.82rem;font-weight:600;color:var(--t1);' +
+    '}' +
+    '.winner-variations-wrapper .wv-meta{' +
+      'font-size:0.7rem;color:var(--t2);' +
+    '}' +
+
+    /* ── Tier badges ── */
+    '.winner-variations-wrapper .wv-tier-badge{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 8px;border-radius:10px;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;' +
+    '}' +
+    '.winner-variations-wrapper .wv-tier-massive{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}' +
+    '.winner-variations-wrapper .wv-tier-good{background:#fffbeb;color:#b45309;border:1px solid #fde68a;}' +
+    '.winner-variations-wrapper .wv-tier-mild{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}' +
+
+    /* ── Funnel pills (match gap box palette) ── */
+    '.winner-variations-wrapper .wv-funnel-tag{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 7px;border-radius:4px;' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;' +
+    '}' +
+    '.winner-variations-wrapper .wv-funnel-TOF{background:#dcfce7;color:#15803d;}' +
+    '.winner-variations-wrapper .wv-funnel-MOF{background:#dbeafe;color:#1d4ed8;}' +
+    '.winner-variations-wrapper .wv-funnel-BOF{background:#fce7f3;color:#be185d;}' +
+
+    /* ── Progress bar ── */
+    '.winner-variations-wrapper .wv-progress{' +
+      'display:flex;align-items:center;gap:10px;margin-bottom:12px;' +
+    '}' +
+    '.winner-variations-wrapper .wv-progress-bar{' +
+      'flex:1;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;' +
+    '}' +
+    '.winner-variations-wrapper .wv-progress-fill{' +
+      'height:100%;background:var(--test);transition:width 0.3s ease;' +
+    '}' +
+    '.winner-variations-wrapper .wv-progress-text{' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:0.7rem;color:var(--t2);white-space:nowrap;' +
+    '}' +
+
+    /* ── Variation rows ── */
+    '.winner-variations-wrapper .wv-rows{margin-bottom:12px;}' +
+    '.winner-variations-wrapper .wv-row{' +
+      'display:grid;grid-template-columns:110px 1fr auto;' +
+      'gap:12px;align-items:center;' +
+      'padding:8px 0;' +
+      'border-bottom:1px solid var(--b);' +
+      'font-size:0.78rem;' +
+    '}' +
+    '.winner-variations-wrapper .wv-row:last-child{border-bottom:none;}' +
+    '.winner-variations-wrapper .wv-row-elem{' +
+      'font-weight:500;color:var(--t1);' +
+    '}' +
+    '.winner-variations-wrapper .wv-row-desc{' +
+      'color:var(--t2);line-height:1.4;' +
+    '}' +
+    '.winner-variations-wrapper .wv-row-action{text-align:right;}' +
+
+    /* ── Create Task button ── */
+    '.winner-variations-wrapper .wv-create-btn{' +
+      'padding:5px 12px;border-radius:6px;' +
+      'border:1px solid #e2e8f0;' +
+      'background:#fff;color:#64748b;' +
+      'font-family:inherit;' +
+      'font-size:0.7rem;font-weight:500;' +
+      'cursor:pointer;white-space:nowrap;' +
+      'transition:background .15s, border-color .15s, color .15s, transform .1s;' +
+    '}' +
+    '.winner-variations-wrapper .wv-create-btn:hover:not(:disabled){' +
+      'background:var(--test);border-color:var(--test);color:#fff;' +
+    '}' +
+    '.winner-variations-wrapper .wv-create-btn:active:not(:disabled){transform:scale(0.97);}' +
+    '.winner-variations-wrapper .wv-create-btn:disabled{cursor:default;}' +
+    '.winner-variations-wrapper .wv-create-btn.wv-creating{' +
+      'background:#f1f5f9;border-color:#e2e8f0;color:#64748b;opacity:0.7;' +
+    '}' +
+    '.winner-variations-wrapper .wv-create-btn.wv-success,' +
+    '.winner-variations-wrapper .wv-create-btn.wv-queued{' +
+      'background:#dcfce7;border-color:#bbf7d0;color:#15803d;' +
+    '}' +
+    '.winner-variations-wrapper .wv-create-btn.wv-failed{' +
+      'background:#fee2e2;border-color:#fecaca;color:#dc2626;' +
+    '}' +
+
+    /* ── Create All Remaining ── */
+    '.winner-variations-wrapper .wv-all-row{margin-top:10px;text-align:center;}' +
+    '.winner-variations-wrapper .wv-all-btn{' +
+      'display:block;width:100%;' +
+      'padding:8px 16px;border-radius:6px;' +
+      'border:1px solid var(--test);' +
+      'background:#fff;color:var(--test);' +
+      'font-family:inherit;' +
+      'font-size:0.75rem;font-weight:600;' +
+      'cursor:pointer;' +
+      'transition:background .15s, color .15s, transform .1s;' +
+    '}' +
+    '.winner-variations-wrapper .wv-all-btn:hover:not(:disabled){' +
+      'background:var(--test);color:#fff;' +
+    '}' +
+    '.winner-variations-wrapper .wv-all-btn:active:not(:disabled){transform:scale(0.98);}' +
+    '.winner-variations-wrapper .wv-all-btn:disabled{cursor:default;}' +
+    '.winner-variations-wrapper .wv-all-btn.wv-creating{' +
+      'background:#f1f5f9;border-color:#e2e8f0;color:#64748b;' +
+    '}' +
+    '.winner-variations-wrapper .wv-all-done{' +
+      'display:inline-block;padding:6px 14px;' +
+      'color:#15803d;font-size:0.72rem;font-weight:500;' +
+    '}' +
+
+    '</style>'
+  );
 }
 

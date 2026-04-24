@@ -610,7 +610,6 @@ function parseClickUpTask(t) {
       cfByName[(f.name || '').toLowerCase().trim()] = f;
     }
   }
-  console.log('[DEBUG] task:', t.name, '| cfByName keys:', Object.keys(cfByName), '| persona raw:', cfByName['persona'], '| awarness raw:', cfByName['awarness stage']);
 
   function getFieldValue(names) {
     // names is an array of possible field name variants to try
@@ -652,6 +651,22 @@ function parseClickUpTask(t) {
   var funnelStage = getFieldValue(['funnel type', 'funnel', 'funnel stage', 'funnelstage', 'stage', 'funnel_stage', 'awarness stage', 'awareness stage', 'awarness_stage', 'awareness level', 'awarness level']);
   var parentAd = getFieldValue(['parent ad', 'parentad', 'parent', 'parent task']);
   var variationNum = getFieldValue(['variation number', 'variationnumber', 'variation #', 'variation']);
+
+  // Fallback: extract funnel stage from task name (TOF/MOF/BOF pattern)
+  if (!funnelStage) {
+    var nameUpper = (t.name || '').toUpperCase();
+    if (nameUpper.indexOf(' - TOF') !== -1 || nameUpper.indexOf('-TOF') !== -1) funnelStage = 'TOF';
+    else if (nameUpper.indexOf(' - MOF') !== -1 || nameUpper.indexOf('-MOF') !== -1) funnelStage = 'MOF';
+    else if (nameUpper.indexOf(' - BOF') !== -1 || nameUpper.indexOf('-BOF') !== -1) funnelStage = 'BOF';
+  }
+
+  // Fallback: extract persona from task name — ICP: pattern only
+  if (!persona) {
+    var icpMatch = (t.name || '').match(/ICP:\s*([^,\-\|]+)/i);
+    if (icpMatch) {
+      persona = icpMatch[1].trim();
+    }
+  }
 
   // Creative Hypothesis: stored at start of description before the ━━━ separator
   var creativeHypothesis = '';

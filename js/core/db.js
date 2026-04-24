@@ -79,7 +79,7 @@ function _adToRow(a, productId) {
     angle: a.angle || null,
     persona: a.persona || null,
     parent_ad_id: a.parentAdId || null,
-    variation_number: a.variationNumber || null,
+    variation_number: a.variationNumber ? (parseInt(a.variationNumber, 10) || null) : null,
     ad_origin: a.adOrigin || null,
     clickup_task_id: clickupId,
     meta: meta

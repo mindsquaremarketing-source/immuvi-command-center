@@ -64,9 +64,6 @@ function process(ads) {
 }
 
 function deriveWinners() {
-  console.log('[deriveWinners] ADS.length =', ADS.length);
-  console.log('[deriveWinners] ADS statuses =', ADS.map(function(a){ return a && a.status; }));
-  console.log('[deriveWinners] ADS parentAdIds =', ADS.map(function(a){ return a && a.parentAdId; }));
   WINNERS = [];
   for (var i = 0; i < ADS.length; i++) {
     var ad = ADS[i];
@@ -80,7 +77,6 @@ function deriveWinners() {
       WINNERS.push({ parent: ad, variations: variations });
     }
   }
-  console.log('[deriveWinners] WINNERS built =', WINNERS.length, JSON.stringify(WINNERS.map(function(w){ return { id: w.parent.id, status: w.parent.status, parentAdId: w.parent.parentAdId }; })));
 }
 
 function genActions() {

@@ -610,6 +610,7 @@ function parseClickUpTask(t) {
       cfByName[(f.name || '').toLowerCase().trim()] = f;
     }
   }
+  console.log('[DEBUG] task:', t.name, '| cfByName keys:', Object.keys(cfByName), '| persona raw:', cfByName['persona'], '| awarness raw:', cfByName['awarness stage']);
 
   function getFieldValue(names) {
     // names is an array of possible field name variants to try

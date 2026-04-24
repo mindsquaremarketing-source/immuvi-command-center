@@ -235,7 +235,24 @@ function createClickUpTaskFromAction(actionId, onDone) {
 
   // Step 1 — create task; include description in the initial POST so it's reliably sent
   // (a separate PUT via corsproxy can silently fail, causing blank descriptions)
-  var createPayload = { name: act.title };
+  // Build standardized task name: [ANGLE] - ICP: [Persona] - [TOF/MOF/BOF] - [Ad Format]
+  // Falls back to act.title if angle or funnel is missing (old-style actions)
+  var standardizedName = (function() {
+    var ang = (act.angle || (sourceAd && sourceAd.angle) || '').trim();
+    var per = (act.persona || (sourceAd && sourceAd.persona) || '').trim();
+    var fun = (act.funnelStage || (sourceAd && sourceAd.funnelStage) || '').trim().toUpperCase();
+    var fmt = (act.format || (sourceAd && (sourceAd.adType || sourceAd.formatName)) || '').trim();
+
+    // Only use standardized format if we have at least angle + funnel
+    if (!ang || !fun) return act.title;
+
+    var name = ang;
+    if (per) name += ' - ICP: ' + per;
+    name += ' - ' + fun;
+    if (fmt) name += ' - ' + fmt;
+    return name;
+  })();
+  var createPayload = { name: standardizedName };
   if (desc) createPayload.description = desc;
   if (dueTs) createPayload.due_date = dueTs;
   if (customFields && customFields.length > 0) createPayload.custom_fields = customFields;

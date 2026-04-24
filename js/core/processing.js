@@ -67,7 +67,7 @@ function deriveWinners() {
   WINNERS = [];
   for (var i = 0; i < ADS.length; i++) {
     var ad = ADS[i];
-    if (ad.status === 'Winner' && !ad.parentAdId) {
+    if ((ad.status === 'Winner' || ad.status === 'Scale') && !ad.parentAdId) {
       var variations = [];
       for (var j = 0; j < ADS.length; j++) {
         if (ADS[j].parentAdId === ad.id) {

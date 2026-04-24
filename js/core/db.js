@@ -54,7 +54,7 @@ var _META_FIELDS = [
   '_fromAction', '_productionStatus', '_crossProductUses',
   'hookType', 'creativeStructure', 'productionStyle', 'creativeHypothesis',
   'uniqueName', 'description', 'dueDate',
-  'dateCreated', 'taskName'
+  'dateCreated', 'taskName', 'taskEditor'
 ];
 
 function _adToRow(a, productId) {

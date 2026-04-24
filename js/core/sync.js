@@ -668,6 +668,90 @@ function parseClickUpTask(t) {
     }
   }
 
+  // Fallback: extract from standardized task name format
+  //   "[ANGLE] - ICP: [Persona] - [TOF/MOF/BOF] - [Ad Format] - [EDITOR]"
+  // Editor segment is optional — also supports "... - [Ad Format]" at end.
+  // Only fills fields that are still empty — never overrides ClickUp custom-field values.
+  // Skips generic placeholder tasks that carry no real taxonomy signal.
+  var taskEditor = '';
+  (function extractFromStandardizedName() {
+    var rawName = t.name || '';
+    if (!rawName) return;
+
+    // STEP 1 — skip generic / placeholder tasks (no real angle/format info in them)
+    var skipPatterns = [
+      /3\s+variations?\s+of\s+\d/i,           // "3 variations of 1234"
+      /own\s+research/i,                        // "own research"
+      /3\s+creatives\s+on\s+this/i,             // "3 creatives on this"
+      /3\s+creatives\s+related\s+to\s+this/i,   // "3 creatives related to this"
+      /create\s+scripts/i,                      // "create scripts"
+      /find\s+creative\s+hooks/i                // "find creative hooks"
+    ];
+    for (var si = 0; si < skipPatterns.length; si++) {
+      if (skipPatterns[si].test(rawName)) return;
+    }
+
+    // Helper: strip boilerplate prefixes off the front of a string.
+    // Order matters — longer phrases MUST come first so "3 creatives on" is eaten
+    // whole rather than leaving "creatives on..." behind.
+    function stripBoilerplate(s) {
+      var out = s;
+      out = out.replace(/^\s*3\s+new\s+concept\s+creatives\s*-\s*/i, '');
+      out = out.replace(/^\s*3\s+new\s+concepts?\s+/i, '');
+      out = out.replace(/^\s*3\s+creatives\s+on\s*-\s*/i, '');
+      out = out.replace(/^\s*3\s+creatives\s+on\s+/i, '');
+      out = out.replace(/^\s*3\s+creatives\s*-\s*/i, '');
+      out = out.replace(/^\s*3\s+concept\s+/i, '');
+      out = out.replace(/^\s*3\s+(BOF|MOF|TOF)\s+/i, '');
+      out = out.replace(/^\s*3\s+/, '');
+      return out.trim();
+    }
+
+    // STEP 2 — angle fallback (only if ClickUp 'angle' field was empty)
+    if (!angle) {
+      var cleaned = stripBoilerplate(rawName);
+      var candidate = '';
+      // Prefer the ICP: anchor — it's explicit and unambiguous
+      var icpIdx = cleaned.search(/\s-\s+ICP:/i);
+      if (icpIdx !== -1) {
+        candidate = cleaned.slice(0, icpIdx);
+      } else {
+        // Fall back to TOF/MOF/BOF anchor
+        var funIdx = cleaned.search(/\s-\s+(TOF|MOF|BOF)\b/i);
+        if (funIdx !== -1) candidate = cleaned.slice(0, funIdx);
+      }
+      if (candidate) {
+        candidate = candidate.replace(/^\s*-+\s*/, '').replace(/\s*-+\s*$/, '').trim();
+        // Length gate: 3-80 chars. Short codes like "VSL", "POV", "UGC" are valid angles.
+        if (candidate.length >= 3 && candidate.length <= 80) angle = candidate;
+      }
+    }
+
+    // STEPS 3 & 4 — parse trailing segments after TOF/MOF/BOF.
+    // Unified to avoid double-counting the format as editor in the no-editor case.
+    //   5-segment form: "... - TOF - <format> - <editor>"
+    //   4-segment form: "... - TOF - <format>"            (editor stays null)
+    var editorRx = /^[A-Za-z][A-Za-z\s\-]{1,14}$/; // 2-15 chars, letters + space + hyphen only
+    var trailWithEditor = rawName.match(/\s-\s+(?:TOF|MOF|BOF)\s+-\s+([^-]+?)\s+-\s+([^-]+?)\s*$/i);
+    if (trailWithEditor) {
+      // Format + editor both present
+      if (!adType) {
+        var fmt = trailWithEditor[1].trim();
+        if (fmt.length >= 2 && fmt.length <= 40) adType = fmt;
+      }
+      var ed = trailWithEditor[2].trim();
+      if (editorRx.test(ed)) taskEditor = ed;
+    } else {
+      // Fall back: format only, no editor ("... - TOF - <format>")
+      var trailFormatOnly = rawName.match(/\s-\s+(?:TOF|MOF|BOF)\s+-\s+([^-]+?)\s*$/i);
+      if (trailFormatOnly && !adType) {
+        var fmt2 = trailFormatOnly[1].trim();
+        if (fmt2.length >= 2 && fmt2.length <= 40) adType = fmt2;
+      }
+      // taskEditor intentionally left '' in this branch
+    }
+  })();
+
   // Creative Hypothesis: stored at start of description before the ━━━ separator
   var creativeHypothesis = '';
   var desc = t.description || '';
@@ -740,7 +824,8 @@ function parseClickUpTask(t) {
     adOrigin: 'ClickUp',
     taskType: isProduction ? 'production' : 'format',
     sourceFormatId: sourceFormatId,
-    dateCreated: t.date_created ? parseInt(t.date_created, 10) : null
+    dateCreated: t.date_created ? parseInt(t.date_created, 10) : null,
+    taskEditor: taskEditor || null
   };
 }
 

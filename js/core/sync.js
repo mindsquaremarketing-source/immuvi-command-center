@@ -644,11 +644,11 @@ function parseClickUpTask(t) {
   var angleTag   = getFieldValue(['angle tag']);
   var personaTag = getFieldValue(['persona tag']);
   var angle   = angleTag   || getFieldValue(['angle', 'angles', 'ad angle']);
-  var persona = personaTag || getFieldValue(['persona', 'personas', 'target persona', 'audience']);
+  var persona = personaTag || getFieldValue(['persona', 'personas', 'target persona', 'audience', 'icp', 'target audience', 'sub-icp']);
   var adLink   = getFieldValue(['inspiration link', 'inspo link', 'ad link', 'adlink', 'ad url', 'adurl', 'creative link', 'reference link']);
   var driveLink = getFieldValue(['drive link', 'google drive', 'gdrive', 'production link', 'google drive link', 'drive']);
   var adType = getFieldValue(['photo/video', 'ad type', 'adtype', 'format type', 'type']);
-  var funnelStage = getFieldValue(['funnel type', 'funnel', 'funnel stage', 'funnelstage', 'stage', 'funnel_stage']);
+  var funnelStage = getFieldValue(['funnel type', 'funnel', 'funnel stage', 'funnelstage', 'stage', 'funnel_stage', 'awarness stage', 'awareness stage', 'awarness_stage', 'awareness level', 'awarness level']);
   var parentAd = getFieldValue(['parent ad', 'parentad', 'parent', 'parent task']);
   var variationNum = getFieldValue(['variation number', 'variationnumber', 'variation #', 'variation']);
 

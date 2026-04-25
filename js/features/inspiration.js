@@ -99,6 +99,13 @@ async function loadInspirations() {
   // Re-check dupes against current ADS (silent — render happens in boot sequence)
   if (ADS && ADS.length > 0) refreshAllDupeChecks(false);
   startResultPolling();
+  // Queue badge + filter chips + per-product realtime visual feedback. Each
+  // function follows the existing "clear before restart" pattern so a product
+  // switch cleanly reuses the same globals.
+  _injectInspirationStyles();
+  _ensureInspirationDom();
+  _startInsQueueBadgePolling();
+  _subscribeInspirationsRealtime();
 }
 
 // One-time migration: set ClickUp doc page URLs for inspirations created before this feature
@@ -864,17 +871,27 @@ function hideInsTooltip() {
 }
 
 function renderInspirations() {
+  // Idempotent: ensures style block + queue badge + filter chips exist
+  _injectInspirationStyles();
+  _ensureInspirationDom();
+
   var platform = (document.getElementById('insFiltPlatform')||{}).value || '';
   var format   = (document.getElementById('insFiltFormat')||{}).value || '';
   var status   = (document.getElementById('insFiltStatus')||{}).value || '';
   var hook     = (document.getElementById('insFiltHook')||{}).value || '';
   var search   = ((document.getElementById('insFiltSearch')||{}).value || '').toLowerCase();
+  var chip     = _insChipFilter || 'all';
 
   var filtered = INSPIRATIONS.filter(function(ins) {
     if (platform && ins.platform !== platform) return false;
     if (format && ins.formatName !== format) return false;
     if (status && ins.status !== status) return false;
     if (hook && ins.hookType !== hook) return false;
+    if (chip === 'TOF' || chip === 'MOF' || chip === 'BOF') {
+      if (ins.funnelStage !== chip) return false;
+    } else if (chip === 'review') {
+      if (!ins._needsAngleReview && !ins._needsPersonaReview) return false;
+    }
     if (search) {
       var hay = [ins.brand,ins.angle,ins.persona,ins.creativeUSP,ins.notes,ins.sourceUrl].join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
@@ -892,7 +909,23 @@ function renderInspirations() {
 
   if (filtered.length === 0) {
     tbody.innerHTML = '';
-    if (empty) empty.style.display = 'block';
+    if (empty) {
+      empty.style.display = 'block';
+      // Truly-empty (no rows + no queued items) → animated card.
+      // Filter-empty → simple muted "no matches" line.
+      if (INSPIRATIONS.length === 0) {
+        empty.className = 'ins-empty ins-empty-card';
+        empty.innerHTML =
+          '<div class="ins-empty-icon">🎬</div>' +
+          '<div class="ins-empty-title">No inspirations yet</div>' +
+          '<div class="ins-empty-body">Paste a competitor ad URL above and click + Add to Queue</div>';
+      } else {
+        empty.className = 'ins-empty';
+        empty.innerHTML =
+          '<div class="ins-empty-title">No matches for current filters</div>' +
+          '<div class="ins-empty-sub">Try clearing platform / status / chip filters</div>';
+      }
+    }
     return;
   }
   if (empty) empty.style.display = 'none';
@@ -969,7 +1002,7 @@ function renderInspirations() {
       ? '<button class="ins-dupe-dot ' + ins._dupeType + '" onclick="toggleDupeBanner(' + insIdQ + ')" title="' + ({ winner:'Similar ad WON — click to see', loser:'Similar ad LOST — click to see', tested:'Similar ad exists — click to see' }[ins._dupeType]||'Duplicate detected') + '">!</button>'
       : '';
 
-    var mainRow = '<tr>' +
+    var mainRow = '<tr data-ins-id="'+escAttr(insId)+'">' +
       // 1. #
       '<td style="font-family:\'JetBrains Mono\',monospace;font-size:0.65rem;color:var(--t3);white-space:nowrap">'+esc(ins.id)+dupeDot+'</td>' +
       // 2. Format Name
@@ -1038,8 +1071,17 @@ function renderInspirations() {
       // 16. Duration
       '<td style="font-family:\'JetBrains Mono\',monospace;font-size:0.68rem;color:var(--t3);white-space:nowrap">'+(ins.duration_seconds ? esc(String(ins.duration_seconds))+'s' : '\u2014')+'</td>'
       ) +
-      // 17. Status
-      '<td><span class="ins-status-badge '+(ins.status||'saved').toLowerCase().replace(/\s+/g,'-')+'">'+esc(ins.status||'Saved')+'</span></td>' +
+      // 17. Status — styled pill + classifiedAt relative timestamp
+      (function(){
+        var raw = ins.status || 'Saved';
+        var key = String(raw).toLowerCase();
+        var pillCls = 'saved';
+        if (key === 'processing') pillCls = 'processing';
+        else if (key === 'classified' || key === 'approved' || key === 'winner' || key === 'scale') pillCls = 'classified';
+        else if (key === 'error' || key === 'failed' || key === 'loser') pillCls = (key === 'error' || key === 'failed') ? 'error' : 'classified';
+        var rel = ins.classifiedAt ? '<div class="ins-rel-ts">'+esc(_insRelTime(ins.classifiedAt))+'</div>' : '';
+        return '<td><span class="ins-status-pill '+pillCls+'">'+esc(raw)+'</span>'+rel+'</td>';
+      })() +
       // 18. Cells Used
       (function(){
         var cellTasks = ADS.filter(function(a){ return a._fromInspoId === ins.id; });
@@ -1069,7 +1111,7 @@ function renderInspirations() {
             'style="font-size:0.65rem;padding:3px 7px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;border-radius:5px;cursor:pointer;font-weight:600">'+
             '📄? Fetch Brief</button></td>';
         }
-        return '<td style="white-space:nowrap"><span style="font-size:0.65rem;color:var(--t3)">—</span></td>';
+        return '<td style="white-space:nowrap"><span class="ins-brief-pending">⏳ Pending</span></td>';
       })() +
       // 19. Tags
       '<td style="white-space:nowrap">'+tagPills+'</td>' +
@@ -1766,3 +1808,223 @@ async function crossProductMarkAdImported(sourceProductId, sourceAdId, importing
   void sourceProductId; void sourceAdId; void importingProductId;
 }
 
+// ====================================================================
+// QUEUE BADGE · STATUS PILL · BRIEF · REALTIME · CHIPS · EMPTY STATE
+// ====================================================================
+// New module-level state. Each interval/channel follows the established
+// "clear → restart" pattern so a product switch (which calls loadInspirations
+// in the background) cleanly recycles them without leaks.
+var _INS_FEAT_STYLES_ID = 'ins-feature-styles';
+var _insQueueBadgeTimer = null;
+var _insRealtimeChannel = null;
+var _insChipFilter = 'all';
+
+// Inject the supporting CSS once. All values come from base.css tokens.
+function _injectInspirationStyles() {
+  if (document.getElementById(_INS_FEAT_STYLES_ID)) return;
+  var st = document.createElement('style');
+  st.id = _INS_FEAT_STYLES_ID;
+  st.textContent =
+    /* ── Queue status badge ── */
+    '.ins-q-badges{display:inline-flex;gap:6px;margin-left:8px;align-items:center;flex-wrap:wrap;}' +
+    '.ins-q-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:14px;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;font-family:\'JetBrains Mono\',monospace;' +
+      'border:1px solid transparent;white-space:nowrap;}' +
+    '.ins-q-pill.pending{background:var(--readyb);color:var(--ready);border-color:var(--readybr);}' +
+    '.ins-q-pill.processing{background:var(--inprogb);color:var(--inprog);border-color:var(--inprogbr);' +
+      'animation:pulse 1.6s ease-in-out infinite;}' +
+    '.ins-q-pill.classified{background:var(--winb);color:var(--win);border-color:var(--winbr);}' +
+
+    /* ── Status pill (column 17) ── */
+    '.ins-status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;' +
+      'font-size:0.66rem;font-weight:600;border:1px solid transparent;white-space:nowrap;}' +
+    '.ins-status-pill::before{content:"";width:5px;height:5px;border-radius:50%;flex-shrink:0;}' +
+    '.ins-status-pill.saved{background:var(--el);color:var(--t2);border-color:var(--b);}' +
+    '.ins-status-pill.saved::before{background:var(--t3);}' +
+    '.ins-status-pill.processing{background:var(--inprogb);color:var(--inprog);border-color:var(--inprogbr);' +
+      'animation:pulse 1.6s ease-in-out infinite;}' +
+    '.ins-status-pill.processing::before{background:var(--inprog);}' +
+    '.ins-status-pill.classified{background:var(--winb);color:var(--win);border-color:var(--winbr);}' +
+    '.ins-status-pill.classified::before{background:var(--win);}' +
+    '.ins-status-pill.error{background:var(--loseb);color:var(--lose);border-color:var(--losebr);}' +
+    '.ins-status-pill.error::before{background:var(--lose);}' +
+    '.ins-rel-ts{font-size:0.6rem;color:var(--t3);margin-top:3px;font-family:\'JetBrains Mono\',monospace;}' +
+
+    /* ── Brief column "Pending" muted state ── */
+    '.ins-brief-pending{font-size:0.65rem;color:var(--t3);font-weight:500;}' +
+
+    /* ── Realtime row flash (1.5s green sweep) ── */
+    '@keyframes insRowFlash{0%{background:rgba(5,150,105,0.22);}100%{background:transparent;}}' +
+    '#insTbody tr.ins-row-flash > td{animation:insRowFlash 1.5s ease-out both;}' +
+
+    /* ── Filter chip bar (matches .nt-chip from gap box) ── */
+    '.ins-chip-bar{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 12px 0;margin-top:-4px;}' +
+    '.ins-chip-bar .nt-chip{padding:4px 12px;border-radius:14px;border:none;' +
+      'background:#f1f5f9;color:var(--t2);font-family:inherit;font-size:0.7rem;font-weight:500;' +
+      'cursor:pointer;transition:background .15s, color .15s, transform .1s;}' +
+    '.ins-chip-bar .nt-chip:hover{background:#e2e8f0;color:var(--t1);}' +
+    '.ins-chip-bar .nt-chip:active{transform:scale(0.97);}' +
+    '.ins-chip-bar .nt-chip.active{background:var(--test);color:#fff;}' +
+    '.ins-chip-bar .nt-chip.active:hover{background:#4338ca;}' +
+
+    /* ── Empty-state card with subtle pulsing dashed border ── */
+    '.ins-empty-card{text-align:center;padding:48px 24px;background:var(--card);border-radius:var(--r);' +
+      'border:2px dashed var(--b);animation:insBorderPulse 3.2s ease-in-out infinite;' +
+      'box-shadow:0 1px 3px rgba(15,23,42,0.04);}' +
+    '@keyframes insBorderPulse{0%,100%{border-color:var(--b);}50%{border-color:var(--bh);}}' +
+    '.ins-empty-card .ins-empty-icon{font-size:2.4rem;margin-bottom:12px;line-height:1;}' +
+    '.ins-empty-card .ins-empty-title{font-size:0.95rem;font-weight:600;color:var(--t1);margin-bottom:6px;}' +
+    '.ins-empty-card .ins-empty-body{font-size:0.78rem;color:var(--t2);}';
+  document.head.appendChild(st);
+}
+
+// Ensure the queue badge + chip bar are present in the inspiration tab DOM.
+// Idempotent — safe to call from every render.
+function _ensureInspirationDom() {
+  var toolbar = document.querySelector('#panel-inspiration .ins-toolbar');
+  if (toolbar && !document.getElementById('insQueueBadge')) {
+    var badge = document.createElement('div');
+    badge.id = 'insQueueBadge';
+    badge.className = 'ins-q-badges';
+    badge.innerHTML =
+      '<span class="ins-q-pill pending">0 pending</span>' +
+      '<span class="ins-q-pill processing">0 processing</span>' +
+      '<span class="ins-q-pill classified">0 classified</span>';
+    toolbar.appendChild(badge);
+  }
+  var panel = document.getElementById('panel-inspiration');
+  if (panel && !document.getElementById('insChipBar')) {
+    var fb = panel.querySelector('.ins-filter-bar');
+    var chipBar = document.createElement('div');
+    chipBar.id = 'insChipBar';
+    chipBar.className = 'ins-chip-bar';
+    chipBar.innerHTML =
+      '<button type="button" class="nt-chip active" data-ins-chip="all"     onclick="_setInsChipFilter(\'all\')">All</button>' +
+      '<button type="button" class="nt-chip"        data-ins-chip="TOF"     onclick="_setInsChipFilter(\'TOF\')">TOF</button>' +
+      '<button type="button" class="nt-chip"        data-ins-chip="MOF"     onclick="_setInsChipFilter(\'MOF\')">MOF</button>' +
+      '<button type="button" class="nt-chip"        data-ins-chip="BOF"     onclick="_setInsChipFilter(\'BOF\')">BOF</button>' +
+      '<button type="button" class="nt-chip"        data-ins-chip="review"  onclick="_setInsChipFilter(\'review\')">⚠️ Needs Review</button>';
+    if (fb && fb.parentNode) {
+      fb.parentNode.insertBefore(chipBar, fb.nextSibling);
+    }
+  }
+}
+
+function _setInsChipFilter(filter) {
+  _insChipFilter = filter;
+  var chips = document.querySelectorAll('#insChipBar .nt-chip');
+  for (var i = 0; i < chips.length; i++) {
+    chips[i].classList.toggle('active', chips[i].getAttribute('data-ins-chip') === filter);
+  }
+  renderInspirations();
+}
+
+// Read inspiration_queue grouped by status and update the live header badge.
+async function _updateInsQueueBadge() {
+  var badge = document.getElementById('insQueueBadge');
+  if (!badge || !DB.ready || !activeProductId) return;
+  try {
+    var res = await SB.from('inspiration_queue').select('status').eq('product_id', activeProductId);
+    if (res.error) return;
+    var counts = { pending: 0, processing: 0, classified: 0 };
+    (res.data || []).forEach(function(r) {
+      var s = String(r.status || '').toLowerCase();
+      if (counts[s] !== undefined) counts[s]++;
+    });
+    badge.innerHTML =
+      '<span class="ins-q-pill pending">'+counts.pending+' pending</span>' +
+      '<span class="ins-q-pill processing">'+counts.processing+' processing</span>' +
+      '<span class="ins-q-pill classified">'+counts.classified+' classified</span>';
+  } catch (e) { /* transient — keep last value */ }
+}
+
+function _startInsQueueBadgePolling() {
+  if (_insQueueBadgeTimer) clearInterval(_insQueueBadgeTimer);
+  _updateInsQueueBadge();
+  _insQueueBadgeTimer = setInterval(_updateInsQueueBadge, 10000);
+}
+
+// Per-product realtime channel scoped just to the inspirations table — gives
+// us instant visual feedback on classification (the global _resubscribeRealtime
+// listener re-fetches taxonomy/cells but never touches INSPIRATIONS).
+function _subscribeInspirationsRealtime() {
+  if (!SB || !activeProductId) return;
+  if (_insRealtimeChannel) {
+    try { SB.removeChannel(_insRealtimeChannel); } catch (e) {}
+    _insRealtimeChannel = null;
+  }
+  var pid = activeProductId;
+  _insRealtimeChannel = SB.channel('ins-feedback:' + pid)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'inspirations', filter: 'product_id=eq.' + pid }, function(payload) {
+      _handleInspirationRealtime(payload, pid);
+    })
+    .subscribe();
+}
+
+function _handleInspirationRealtime(payload, pidAtSubscribe) {
+  if (pidAtSubscribe !== activeProductId) return;
+  var newRow = payload.new || {};
+  var oldRow = payload.old || {};
+  var newBlob = newRow.data || {};
+  var oldBlob = oldRow.data || {};
+  var newStatus = newRow.status || newBlob.status;
+  var oldStatus = oldRow.status || oldBlob.status;
+  // Only react when a row newly transitions into Classified
+  if (newStatus !== 'Classified' || oldStatus === 'Classified') return;
+
+  var merged = Object.assign({}, newBlob, {
+    id: newRow.id,
+    url: newRow.url || newBlob.url,
+    sourceUrl: newBlob.sourceUrl || newRow.url,
+    title: newRow.title || newBlob.title || '',
+    platform: newRow.platform || newBlob.platform || '',
+    addedBy: newRow.added_by || newBlob.addedBy || '',
+    status: newRow.status || newBlob.status || 'saved'
+  });
+  var idx = -1;
+  for (var i = 0; i < INSPIRATIONS.length; i++) {
+    if (INSPIRATIONS[i].id === merged.id) { idx = i; break; }
+  }
+  if (idx >= 0) INSPIRATIONS[idx] = merged;
+  else INSPIRATIONS.unshift(merged);
+
+  renderInspirations();
+  _updateInsQueueBadge();
+  _flashInspirationRow(merged.id);
+  if (typeof toast === 'function') {
+    var brand = merged.brand || merged.formatName || merged.id || 'Inspiration';
+    var angle = merged.angle || 'no angle';
+    toast('✓ ' + brand + ' classified — ' + angle, 'ok');
+  }
+}
+
+// Flash + auto-scroll the row matching this inspiration id. Uses a setTimeout
+// to give renderInspirations a tick to paint the new <tr>.
+function _flashInspirationRow(id) {
+  setTimeout(function() {
+    var tr = document.querySelector('#insTbody tr[data-ins-id="'+id+'"]');
+    if (!tr) return;
+    tr.classList.add('ins-row-flash');
+    var rect = tr.getBoundingClientRect();
+    var offscreen = rect.top < 80 || rect.bottom > (window.innerHeight - 20);
+    if (offscreen) {
+      try { tr.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+    }
+    setTimeout(function() { tr.classList.remove('ins-row-flash'); }, 1500);
+  }, 60);
+}
+
+// "2 hours ago" style relative timestamp for the classifiedAt label under the status pill.
+function _insRelTime(ms) {
+  if (!ms) return '';
+  var diff = Date.now() - ms;
+  if (diff < 0) diff = 0;
+  var s = Math.floor(diff / 1000);
+  if (s < 60) return s + 's ago';
+  var m = Math.floor(s / 60);
+  if (m < 60) return m + ' minute' + (m > 1 ? 's' : '') + ' ago';
+  var h = Math.floor(m / 60);
+  if (h < 24) return h + ' hour' + (h > 1 ? 's' : '') + ' ago';
+  var d = Math.floor(h / 24);
+  return d + ' day' + (d > 1 ? 's' : '') + ' ago';
+}

@@ -11,6 +11,25 @@ const FUNNEL_FORMAT_SUGGESTIONS = {
 };
 const PRIORITY = { WINNER_ADJACENT: 1, WINNING_ELEMENT: 2, COLD: 3 };
 
+// Module-level cache: last computed gap rows (with competitor signal) — populated
+// by renderGapBox after sort, consumed by renderCompetitorIntel which runs later
+// in the same renderHQ pass and needs the same scored data without recomputing it.
+var _lastGaps = [];
+
+// Token-set Jaccard with ≥4-char filter — used by both the gap table's competitor
+// signal and the Competitor Intel panel to align inspiration rows to taxonomy
+// entries when classifier output isn't a verbatim match.
+function wordOverlap(a, b) {
+  var wa = (a||'').toLowerCase().split(/\s+/).filter(function(w){return w.length>=4;});
+  var wb = (b||'').toLowerCase().split(/\s+/).filter(function(w){return w.length>=4;});
+  if (!wa.length || !wb.length) return 0;
+  var inter = 0;
+  for (var i = 0; i < wa.length; i++)
+    for (var j = 0; j < wb.length; j++)
+      if (wa[i] === wb[j]) { inter++; break; }
+  return inter / (wa.length + wb.length - inter);
+}
+
 // Winner Variations — 5 element-isolation tests spawned from each winner ad.
 // Tier (Massive / Good / Mild) is read from parent.winnerTier if present;
 // falls back to 'normal' priority when absent (no tier system yet in WINNERS).
@@ -170,6 +189,9 @@ function renderHQ() {
   // Winner Variations — 5-element isolation tasks per winner ad
   renderWinnerVariations(WINNERS);
 
+  // Competitor Intel — uses _lastGaps populated by renderGapBox above
+  renderCompetitorIntel(typeof INSPIRATIONS !== 'undefined' ? INSPIRATIONS : []);
+
   renderProductProfile();
 }
 
@@ -265,6 +287,55 @@ function renderGapBox(ads, angles, personas) {
     return a.angle.localeCompare(b.angle);
   });
 
+  // ── Competitor signal: score each gap against classified inspirations ──
+  // After DB.listInspirations spreads the `data` jsonb blob onto the row, fields
+  // sit at the top level — but legacy rows / partial spreads may still nest them
+  // under .data, so read both.
+  var inspos = (typeof INSPIRATIONS !== 'undefined') ? INSPIRATIONS : [];
+  function _insGet(ins, key) {
+    if (!ins) return '';
+    if (ins[key] != null && ins[key] !== '') return ins[key];
+    if (ins.data && ins.data[key] != null && ins.data[key] !== '') return ins.data[key];
+    return '';
+  }
+  for (var qi = 0; qi < gaps.length; qi++) {
+    var gp = gaps[qi];
+    var brands = {};
+    var formats = {};
+    var matchCount = 0;
+    for (var ii = 0; ii < inspos.length; ii++) {
+      var ins = inspos[ii];
+      var insAng = _insGet(ins, 'angle');
+      var insFun = (_insGet(ins, 'funnelStage') || '').toString().toUpperCase();
+      if (!insAng || !insFun) continue;
+      if (insFun !== gp.funnel) continue;
+      if (wordOverlap(insAng, gp.angle) < 0.6) continue;
+      matchCount++;
+      var br = _insGet(ins, 'brand');
+      if (br) brands[br] = (brands[br] || 0) + 1;
+      var fmt = _insGet(ins, 'creativeStructure');
+      if (fmt) formats[fmt] = (formats[fmt] || 0) + 1;
+    }
+    gp.competitorCount = matchCount;
+    gp.competitorBrands = Object.keys(brands).sort(function(a, b){ return brands[b] - brands[a]; }).slice(0, 5);
+    gp.competitorFormats = Object.keys(formats);
+
+    // Smarter format suggestion: prefer the most-frequent competitor structure
+    // over the deterministic hash-pool default when we have any signal.
+    if (gp.competitorFormats.length > 0) {
+      var _topFmt = '', _maxCount = 0;
+      for (var fk in formats) {
+        if (Object.prototype.hasOwnProperty.call(formats, fk) && formats[fk] > _maxCount) {
+          _maxCount = formats[fk]; _topFmt = fk;
+        }
+      }
+      if (_topFmt) gp.format = _topFmt;
+    }
+  }
+
+  // Cache for renderCompetitorIntel — must be set BEFORE any early returns below
+  _lastGaps = gaps;
+
   // Meta counts for the chip row
   var adjacent = 0, proven = 0, cold = 0;
   for (var gi = 0; gi < gaps.length; gi++) {
@@ -310,7 +381,7 @@ function renderGapBox(ads, angles, personas) {
       '<div class="nt-table-wrap">' +
         '<table class="nt-table"><thead><tr>' +
           '<th>Priority</th><th>Angle</th><th>Persona</th><th>Funnel</th>' +
-          '<th>Suggested Format</th><th>Why</th><th></th>' +
+          '<th>Suggested Format</th><th>Why</th><th>Competitor Signal</th><th></th>' +
         '</tr></thead><tbody>';
 
     for (var ri = 0; ri < gaps.length; ri++) {
@@ -334,6 +405,14 @@ function renderGapBox(ads, angles, personas) {
           '<td><span class="nt-funnel-tag nt-funnel-' + row.funnel + '">' + row.funnel + '</span></td>' +
           '<td>' + esc(row.format) + '</td>' +
           '<td class="nt-why">' + esc(whyText) + '</td>' +
+          (function(){
+            var c = row.competitorCount || 0;
+            if (c > 0) {
+              var brandTitle = (row.competitorBrands || []).join(', ');
+              return '<td><span class="nt-comp-badge" title="' + esc(brandTitle) + '">' + esc(c + ' competitor ad' + (c===1?'':'s')) + '</span></td>';
+            }
+            return '<td><span class="nt-comp-empty">—</span></td>';
+          })() +
           '<td><button type="button" class="nt-create-btn" data-gap-idx="' + ri + '">Create Task</button></td>' +
         '</tr>';
     }
@@ -637,6 +716,17 @@ function renderGapBoxStyle() {
       'color:var(--t3);' +
       'font-size:0.82rem;' +
       'background:transparent;border:none;border-radius:0;' +
+    '}' +
+
+    /* ── Competitor signal badge (teal pill) ── */
+    '.next-tests-wrapper .nt-comp-badge{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 8px;border-radius:10px;' +
+      'background:#f0fdfa;color:#0d9488;' +
+      'font-size:11px;font-weight:600;letter-spacing:0.01em;white-space:nowrap;' +
+    '}' +
+    '.next-tests-wrapper .nt-comp-empty{' +
+      'color:var(--t3);font-size:0.72rem;' +
     '}' +
 
     '</style>'
@@ -1111,6 +1201,308 @@ function renderWinnerVariationsStyle() {
       'display:inline-block;padding:6px 14px;' +
       'color:#15803d;font-size:0.72rem;font-weight:500;' +
     '}' +
+
+    '</style>'
+  );
+}
+
+// ── 4a-3. COMPETITOR INTEL ──
+
+// Generic top-N frequency summarizer. Counts occurrences of items[i][key] and
+// returns up to n entries shaped { name, count } sorted desc.
+function topN(items, key, n) {
+  var counts = {};
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    var v = it && it[key];
+    if (v == null || v === '') continue;
+    counts[v] = (counts[v] || 0) + 1;
+  }
+  var arr = [];
+  for (var k in counts) {
+    if (Object.prototype.hasOwnProperty.call(counts, k)) arr.push({ name: k, count: counts[k] });
+  }
+  arr.sort(function(a, b){ return b.count - a.count; });
+  return arr.slice(0, n);
+}
+
+function renderCompetitorIntel(inspirations) {
+  var el = document.getElementById('competitorIntelBox');
+  if (!el) return;
+
+  inspirations = inspirations || (typeof INSPIRATIONS !== 'undefined' ? INSPIRATIONS : []);
+
+  // Normalize each row to a flat shape: top-level fields take precedence, .data
+  // jsonb is the fallback so the function works regardless of how listInspirations
+  // last spread the row.
+  function flat(ins) {
+    var d = (ins && ins.data) || {};
+    return {
+      angle:             ins.angle || d.angle || '',
+      persona:           ins.persona || d.persona || '',
+      funnelStage:       (ins.funnelStage || d.funnelStage || '').toString().toUpperCase(),
+      hookType:          ins.hookType || d.hookType || '',
+      creativeStructure: ins.creativeStructure || d.creativeStructure || '',
+      brand:             ins.brand || d.brand || '',
+      status:            ins.status || d.status || ''
+    };
+  }
+  // Only count rows with at least one taxonomy field — skips raw queued URLs
+  var items = [];
+  for (var ix = 0; ix < inspirations.length; ix++) {
+    var f = flat(inspirations[ix]);
+    if (f.angle || f.hookType || f.creativeStructure || f.brand) items.push(f);
+  }
+
+  var html = '<div class="ci-wrapper">';
+  html += renderCompetitorIntelStyle();
+
+  html +=
+    '<div class="ci-header">' +
+      '<h3 class="ci-title">Competitor Intel</h3>' +
+      '<span class="ci-total-badge">' + mono(items.length) + ' classified</span>' +
+    '</div>';
+
+  if (items.length === 0) {
+    html +=
+      '<div class="ci-empty">' +
+        'No competitor ads classified yet — use the Inspiration tab to queue and classify competitor ads.' +
+      '</div>';
+    html += '</div>';
+    el.innerHTML = html;
+    return;
+  }
+
+  // Per-funnel breakdown — top angles / hooks / structures
+  var sectionHtml = function(title, arr) {
+    if (!arr || !arr.length) {
+      return '<div class="ci-section"><div class="ci-section-title">' + esc(title) + '</div>' +
+             '<div class="ci-empty-line">—</div></div>';
+    }
+    var rows = '';
+    for (var ri = 0; ri < arr.length; ri++) {
+      rows += '<div class="ci-rank-row">' +
+                '<span class="ci-rank-name">' + esc(arr[ri].name) + '</span>' +
+                '<span class="ci-rank-count">' + mono(arr[ri].count) + '</span>' +
+              '</div>';
+    }
+    return '<div class="ci-section"><div class="ci-section-title">' + esc(title) + '</div>' + rows + '</div>';
+  };
+
+  html += '<div class="ci-funnel-grid">';
+  for (var fi = 0; fi < FUNNEL_STAGES.length; fi++) {
+    var fs = FUNNEL_STAGES[fi];
+    var bucket = items.filter(function(x){ return x.funnelStage === fs; });
+    var topAng    = topN(bucket, 'angle', 3);
+    var topHook   = topN(bucket, 'hookType', 3);
+    var topStruct = topN(bucket, 'creativeStructure', 3);
+
+    html += '<div class="ci-card">' +
+              '<div class="ci-card-head">' +
+                '<span class="ci-funnel-tag ci-funnel-' + fs + '">' + fs + '</span>' +
+                '<span class="ci-card-count">' + mono(bucket.length) + ' ad' + (bucket.length===1?'':'s') + ' analyzed</span>' +
+              '</div>' +
+              sectionHtml('Top Angles',     topAng) +
+              sectionHtml('Top Hooks',      topHook) +
+              sectionHtml('Top Structures', topStruct) +
+            '</div>';
+  }
+  html += '</div>'; // .ci-funnel-grid
+
+  // Gaps vs Market — from _lastGaps, only those with competitor signal
+  var gapsWithComp = (_lastGaps || []).filter(function(g){ return (g.competitorCount || 0) > 0; });
+  gapsWithComp.sort(function(a, b){ return (b.competitorCount||0) - (a.competitorCount||0); });
+  gapsWithComp = gapsWithComp.slice(0, 10);
+
+  html += '<div class="ci-gaps-head">Gaps vs Market</div>';
+  if (!gapsWithComp.length) {
+    html += '<div class="ci-empty-line ci-gaps-empty">No matching gaps — your taxonomy is fully covered for everything competitors are running.</div>';
+  } else {
+    html += '<div class="ci-gaps-table-wrap"><table class="ci-gaps-table"><thead><tr>' +
+              '<th>Angle</th><th>Persona</th><th>Funnel</th><th>Competitors</th><th></th>' +
+            '</tr></thead><tbody>';
+    for (var gi = 0; gi < gapsWithComp.length; gi++) {
+      var g = gapsWithComp[gi];
+      var compTitle = (g.competitorBrands || []).join(', ');
+      var compText  = (g.competitorCount || 0) + ' competitor ad' + (g.competitorCount === 1 ? '' : 's');
+      html += '<tr>' +
+                '<td>' + esc(g.angle) + '</td>' +
+                '<td>' + esc(g.persona) + '</td>' +
+                '<td><span class="ci-funnel-tag ci-funnel-' + g.funnel + '">' + g.funnel + '</span></td>' +
+                '<td><span class="ci-comp-badge" title="' + esc(compTitle) + '">' + esc(compText) + '</span></td>' +
+                '<td><button type="button" class="ci-create-btn" data-gap-idx="' + gi + '">Create Task</button></td>' +
+              '</tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+
+  html += '</div>'; // .ci-wrapper
+  el.innerHTML = html;
+
+  // Wire Create Task buttons → reuse the existing gap-task creator
+  var btns = el.querySelectorAll('.ci-create-btn');
+  for (var bi = 0; bi < btns.length; bi++) {
+    btns[bi].addEventListener('click', function(e){
+      var btn = e.currentTarget;
+      if (btn.disabled) return;
+      var idx = parseInt(btn.getAttribute('data-gap-idx'), 10);
+      var gap = gapsWithComp[idx];
+      if (gap) createGapTaskFromRow(gap, btn);
+    });
+  }
+}
+
+function renderCompetitorIntelStyle() {
+  // Scoped under .ci-wrapper. Uses the app's real tokens (--card, --b, --t1/t2/t3,
+  // --test, --holo, --r, --rs) plus the gap box's funnel palette for visual parity.
+  return (
+    '<style>' +
+
+    /* ── Wrapper card — matches .next-tests-wrapper / .winner-variations-wrapper ── */
+    '.ci-wrapper{' +
+      'background:var(--card);' +
+      'border:1px solid var(--b);' +
+      'border-radius:var(--r);' +
+      'box-shadow:0 1px 3px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.02);' +
+      'overflow:hidden;margin-top:16px;' +
+      'color:var(--t1);font-family:inherit;position:relative;' +
+    '}' +
+    '.ci-wrapper::before{' +
+      'content:"";position:absolute;top:0;left:0;right:0;height:2px;' +
+      'background:var(--holo);pointer-events:none;z-index:2;' +
+    '}' +
+
+    /* ── Header ── */
+    '.ci-wrapper .ci-header{' +
+      'display:flex;align-items:center;gap:10px;' +
+      'padding:16px 18px 14px;' +
+      'border-bottom:1px solid var(--b);' +
+    '}' +
+    '.ci-wrapper .ci-title{' +
+      'margin:0;font-size:0.85rem;font-weight:600;color:var(--t1);' +
+    '}' +
+    '.ci-wrapper .ci-total-badge{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 9px;border-radius:10px;' +
+      'background:var(--test);color:#fff;' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;' +
+    '}' +
+
+    /* ── Empty state ── */
+    '.ci-wrapper .ci-empty{' +
+      'padding:32px 20px;text-align:center;' +
+      'color:var(--t3);font-size:0.82rem;' +
+    '}' +
+
+    /* ── Per-funnel breakdown grid ── */
+    '.ci-wrapper .ci-funnel-grid{' +
+      'display:grid;grid-template-columns:repeat(3, 1fr);gap:14px;' +
+      'padding:16px 18px;' +
+    '}' +
+    '@media (max-width: 768px){' +
+      '.ci-wrapper .ci-funnel-grid{grid-template-columns:1fr;}' +
+    '}' +
+    '.ci-wrapper .ci-card{' +
+      'background:#fff;border:1px solid var(--b);border-radius:var(--rs);' +
+      'padding:12px 14px;' +
+    '}' +
+    '.ci-wrapper .ci-card-head{' +
+      'display:flex;align-items:center;gap:8px;margin-bottom:10px;' +
+    '}' +
+    '.ci-wrapper .ci-card-count{' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:0.7rem;color:var(--t2);' +
+    '}' +
+
+    /* ── Funnel pills (palette parity with Next Tests) ── */
+    '.ci-wrapper .ci-funnel-tag{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 7px;border-radius:4px;' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;' +
+    '}' +
+    '.ci-wrapper .ci-funnel-TOF{background:#dcfce7;color:#15803d;}' +
+    '.ci-wrapper .ci-funnel-MOF{background:#dbeafe;color:#1d4ed8;}' +
+    '.ci-wrapper .ci-funnel-BOF{background:#fce7f3;color:#be185d;}' +
+
+    /* ── Top-N sections inside each card ── */
+    '.ci-wrapper .ci-section{margin-bottom:10px;}' +
+    '.ci-wrapper .ci-section:last-child{margin-bottom:0;}' +
+    '.ci-wrapper .ci-section-title{' +
+      'font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;' +
+      'color:var(--t3);margin-bottom:4px;font-weight:500;' +
+    '}' +
+    '.ci-wrapper .ci-rank-row{' +
+      'display:flex;align-items:center;justify-content:space-between;' +
+      'gap:8px;padding:3px 0;' +
+      'font-size:0.74rem;color:var(--t1);' +
+    '}' +
+    '.ci-wrapper .ci-rank-name{' +
+      'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;' +
+      'flex:1;min-width:0;' +
+    '}' +
+    '.ci-wrapper .ci-rank-count{' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:0.65rem;color:var(--t2);' +
+      'background:#f1f5f9;padding:0 6px;border-radius:8px;' +
+    '}' +
+    '.ci-wrapper .ci-empty-line{' +
+      'color:var(--t3);font-size:0.72rem;padding:2px 0;' +
+    '}' +
+
+    /* ── Gaps vs Market ── */
+    '.ci-wrapper .ci-gaps-head{' +
+      'padding:12px 18px 8px;' +
+      'font-size:0.75rem;font-weight:600;color:var(--t1);' +
+      'border-top:1px solid var(--b);' +
+    '}' +
+    '.ci-wrapper .ci-gaps-empty{padding:0 18px 18px;}' +
+    '.ci-wrapper .ci-gaps-table-wrap{' +
+      'padding:0 18px 18px;overflow-x:auto;' +
+    '}' +
+    '.ci-wrapper .ci-gaps-table{' +
+      'width:100%;border-collapse:collapse;font-size:0.75rem;' +
+    '}' +
+    '.ci-wrapper .ci-gaps-table thead th{' +
+      'padding:8px 12px;text-align:left;' +
+      'font-size:0.6rem;text-transform:uppercase;letter-spacing:0.06em;' +
+      'color:#94a3b8;font-weight:500;' +
+      'border-bottom:1px solid #e2e8f0;white-space:nowrap;' +
+    '}' +
+    '.ci-wrapper .ci-gaps-table tbody td{' +
+      'padding:8px 12px;border-bottom:1px solid #f1f5f9;color:var(--t1);' +
+    '}' +
+    '.ci-wrapper .ci-gaps-table tbody tr:last-child td{border-bottom:none;}' +
+    '.ci-wrapper .ci-gaps-table tbody tr:hover td{background:#f8fafc;}' +
+
+    /* ── Competitor count badge (teal) ── */
+    '.ci-wrapper .ci-comp-badge{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 8px;border-radius:10px;' +
+      'background:#f0fdfa;color:#0d9488;' +
+      'font-size:11px;font-weight:600;letter-spacing:0.01em;white-space:nowrap;' +
+    '}' +
+
+    /* ── Create Task button (mirrors Next Tests button) ── */
+    '.ci-wrapper .ci-create-btn{' +
+      'padding:5px 12px;border-radius:6px;' +
+      'border:1px solid #e2e8f0;' +
+      'background:#fff;color:#64748b;' +
+      'font-family:inherit;' +
+      'font-size:0.7rem;font-weight:500;' +
+      'cursor:pointer;white-space:nowrap;' +
+      'transition:background .15s, border-color .15s, color .15s, transform .1s;' +
+    '}' +
+    '.ci-wrapper .ci-create-btn:hover:not(:disabled){' +
+      'background:var(--test);border-color:var(--test);color:#fff;' +
+    '}' +
+    '.ci-wrapper .ci-create-btn:active:not(:disabled){transform:scale(0.97);}' +
+    '.ci-wrapper .ci-create-btn:disabled{cursor:default;}' +
+    /* createGapTaskFromRow toggles these state classes — keep the visual styles */
+    '.ci-wrapper .ci-create-btn.nt-creating{background:#f1f5f9;border-color:#e2e8f0;color:#64748b;opacity:0.7;}' +
+    '.ci-wrapper .ci-create-btn.nt-success{background:#dcfce7;border-color:#bbf7d0;color:#15803d;}' +
+    '.ci-wrapper .ci-create-btn.nt-failed{background:#fee2e2;border-color:#fecaca;color:#dc2626;}' +
 
     '</style>'
   );

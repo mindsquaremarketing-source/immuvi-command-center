@@ -793,6 +793,13 @@ function parseClickUpTask(t) {
   var creativeHypothesis = '';
   var desc = extractPlainText(t.description || '');
   if (desc) {
+    // Strip the "📄 Creative Brief: <url>" header that the creative-pipeline
+    // skill prepends to the task description — that's a doc pointer, not a
+    // hypothesis. Without this strip, the pointer line becomes the entire
+    // hypothesis (no '━━━' separator means desc.trim() returns it whole).
+    desc = desc.replace(/^\s*[📄]?\s*Creative\s+Brief\s*:\s*\S+\s*[\r\n]+/i, '');
+    // Also strip a bare-URL first line (some integrations write the URL alone).
+    desc = desc.replace(/^https?:\/\/\S+\s*[\r\n]+/, '');
     var sepIdx = desc.indexOf('━━━');
     if (sepIdx !== -1) {
       creativeHypothesis = desc.slice(0, sepIdx).trim();
@@ -862,6 +869,8 @@ function parseClickUpTask(t) {
     hookType: getFieldValue(['hook type', 'hooktype', 'hook style', 'hook']),
     productionStyle: getFieldValue(['production style', 'productionstyle', 'production type', 'style']),
     creativeHypothesis: creativeHypothesis || extractPlainText(getFieldValue(['creative hypothesis', 'hypothesis'])),
+    creativeUSP: getFieldValue(['creative usp', 'creative_usp', 'usp']),
+    notes: getFieldValue(['notes', 'note']),
     adOrigin: 'ClickUp',
     taskType: isProduction ? 'production' : 'format',
     sourceFormatId: sourceFormatId,

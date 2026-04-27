@@ -53,9 +53,12 @@ var _META_FIELDS = [
   '_sourceFormatName', '_sourceFormatAdLink', '_sourceFormatAdType',
   '_fromAction', '_productionStatus', '_crossProductUses',
   'hookType', 'creativeStructure', 'productionStyle', 'creativeHypothesis',
+  'creativeUSP', 'notes', 'creativeModality',
   'uniqueName', 'description', 'dueDate',
   'dateCreated', 'taskName', 'taskEditor',
-  'winnerTier', '_rawClickupStatus'
+  'winnerTier', '_rawClickupStatus',
+  '_clickupDocPageUrl', '_clickupDocPageId',
+  '_classifiedAt', '_classifiedBy'
 ];
 
 function _adToRow(a, productId) {

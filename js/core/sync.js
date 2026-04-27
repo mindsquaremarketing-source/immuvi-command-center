@@ -803,7 +803,11 @@ function parseClickUpTask(t) {
     }
   }
 
-  return {
+  // Capture raw ClickUp status BEFORE mapping — extractWinnerTier and the
+  // custom-field tier override both need the original (un-normalized) string.
+  var rawStatus = (t.status && t.status.status) || '';
+
+  var ad = {
     id: t.id || ('ad-' + Date.now() + '-' + Math.random().toString(36).slice(2,6)),
     _clickupId: t.id,
     _clickupUrl: t.url || '',
@@ -812,7 +816,7 @@ function parseClickUpTask(t) {
     driveLink: driveLink || '',
     adType: adType || 'Video',
     funnelStage: funnelStage || 'TOF',
-    status: mapClickUpStatus(t.status && t.status.status),
+    status: mapClickUpStatus(rawStatus),
     angle: angle,
     persona: persona,
     parentAdId: parentAd || null,
@@ -827,6 +831,17 @@ function parseClickUpTask(t) {
     dateCreated: t.date_created ? parseInt(t.date_created, 10) : null,
     taskEditor: taskEditor || null
   };
+  ad.winnerTier = extractWinnerTier(rawStatus);
+
+  // Custom-field tier override — wins over the status-derived tier when present.
+  // Looks for a workspace-defined dropdown/text field under any of these names.
+  var tierField = getFieldValue(['winner tier', 'tier', 'winner type', 'ad tier']);
+  if (tierField) {
+    var tierFromField = extractWinnerTier(tierField);
+    if (tierFromField) ad.winnerTier = tierFromField;
+  }
+
+  return ad;
 }
 
 function parseClickUpProdTask(t) {
@@ -843,16 +858,63 @@ function parseClickUpProdTask(t) {
 
 function mapClickUpStatus(s) {
   if (!s) return 'Untested';
-  var lower = s.toLowerCase();
-  if (lower === 'winner') return 'Winner';
-  if (lower === 'scale') return 'Scale';
-  if (lower === 'complete') return 'Complete';
-  if (lower === 'testing' || lower === 'in review') return 'Testing';
-  if (lower === 'in production' || lower === 'in progress') return 'In Production';
-  if (lower === 'ready to launch' || lower === 'ready') return 'Ready to Launch';
-  if (lower === 'approved') return 'Approved';
-  if (lower === 'loser' || lower === 'closed') return 'Loser';
+  var lower = s.toLowerCase().trim();
+
+  // Winner variants — check BEFORE other statuses
+  if (lower.indexOf('winner') !== -1) return 'Winner';
+  if (lower.indexOf('winning') !== -1) return 'Winner';
+  if (lower.indexOf('won') !== -1) return 'Winner';
+
+  // Scale variants
+  if (lower === 'scale' || lower.indexOf('scaling') !== -1 ||
+      lower.indexOf('scale up') !== -1) return 'Scale';
+
+  // Complete variants
+  if (lower === 'complete' || lower === 'completed' ||
+      lower === 'done' || lower === 'finished') return 'Complete';
+
+  // Testing variants
+  if (lower === 'testing' || lower === 'in review' ||
+      lower === 'under review' || lower === 'reviewing' ||
+      lower === 'in testing' || lower === 'active' ||
+      lower === 'running' || lower === 'live') return 'Testing';
+
+  // In Production variants
+  if (lower === 'in production' || lower === 'in progress' ||
+      lower === 'producing' || lower === 'production' ||
+      lower === 'in development' || lower === 'developing') return 'In Production';
+
+  // Ready to Launch variants
+  if (lower === 'ready to launch' || lower === 'ready' ||
+      lower === 'approved' || lower === 'ready for launch' ||
+      lower === 'launch ready' || lower === 'to launch') return 'Ready to Launch';
+
+  // Loser variants
+  if (lower === 'loser' || lower === 'closed' ||
+      lower === 'lost' || lower === 'failed' ||
+      lower === 'rejected' || lower === 'killed' ||
+      lower === 'paused' || lower === 'stopped') return 'Loser';
+
+  // Untested variants
+  if (lower === 'untested' || lower === 'new' ||
+      lower === 'not started' || lower === 'todo' ||
+      lower === 'to do' || lower === 'open' ||
+      lower === 'backlog' || lower === 'planned') return 'Untested';
+
+  // Approved variants (separate from Ready to Launch)
+  if (lower === 'approved' || lower === 'approve') return 'Approved';
+
+  // Default fallback
   return 'Untested';
+}
+
+function extractWinnerTier(rawStatus) {
+  if (!rawStatus) return '';
+  var s = rawStatus.toLowerCase().trim();
+  if (s.indexOf('massive') !== -1) return 'Massive';
+  if (s.indexOf('good') !== -1) return 'Good';
+  if (s.indexOf('mild') !== -1) return 'Mild';
+  return '';
 }
 
 function mapProdStatus(s) {

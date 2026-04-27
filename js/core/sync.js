@@ -616,19 +616,32 @@ function parseClickUpTask(t) {
     for (var ni = 0; ni < names.length; ni++) {
       var field = cfByName[names[ni].toLowerCase()];
       if (!field) continue;
-      // dropdown: ClickUp returns value as orderindex (new_drop_down) or array index (old style)
-      if ((field.type === 'drop_down' || field.type === 'labels') && field.type_config && field.type_config.options && field.value != null) {
-        var opts = field.type_config.options;
+      var opts = (field.type_config && field.type_config.options) || [];
+      // dropdown / labels: ClickUp's field.value can be:
+      //   - a UUID string  (modern drop_down API — must match opts[i].id)
+      //   - an integer orderindex (legacy)
+      //   - an integer array index (very old)
+      //   - the option name itself (rare)
+      // Without UUID resolution we'd return the raw UUID, which never matches
+      // the in-app taxonomy and silently produces blank Hook/Structure/Style
+      // cells in the tracker (bug observed: 0/103 ads had these fields populated).
+      if ((field.type === 'drop_down' || field.type === 'labels') && opts.length && field.value != null) {
+        // 1. UUID match against option.id (modern API)
+        if (typeof field.value === 'string' && field.value) {
+          for (var ui = 0; ui < opts.length; ui++) {
+            if (opts[ui].id === field.value) return opts[ui].name;
+          }
+        }
+        // 2. orderindex match (legacy)
         var val = typeof field.value === 'number' ? field.value : parseInt(field.value, 10);
         if (!isNaN(val)) {
-          // Try matching by orderindex first (new_drop_down style)
           for (var oi = 0; oi < opts.length; oi++) {
             if (opts[oi].orderindex === val) return opts[oi].name;
           }
-          // Fall back to array index (old style)
+          // 3. array index (very old)
           if (opts[val]) return opts[val].name;
         }
-        // Fallback: value might already be the option name string
+        // 4. value already a name string
         if (typeof field.value === 'string' && field.value) return field.value;
       }
       // url / text / short_text / number
@@ -821,10 +834,10 @@ function parseClickUpTask(t) {
     persona: persona,
     parentAdId: parentAd || null,
     variationNumber: variationNum || null,
-    creativeStructure: getFieldValue(['creative structure', 'structure', 'creative format', 'format category']),
+    creativeStructure: getFieldValue(['creative structure', 'structure', 'creative format', 'format category', 'ad structure']),
     hookType: getFieldValue(['hook type', 'hooktype', 'hook style', 'hook']),
     productionStyle: getFieldValue(['production style', 'productionstyle', 'production type', 'style']),
-    creativeHypothesis: creativeHypothesis,
+    creativeHypothesis: creativeHypothesis || getFieldValue(['creative hypothesis', 'hypothesis']),
     adOrigin: 'ClickUp',
     taskType: isProduction ? 'production' : 'format',
     sourceFormatId: sourceFormatId,

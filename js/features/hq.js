@@ -183,6 +183,10 @@ function renderHQ() {
       '<div class="cov-list">' + psItems + '</div>' +
     '</div>';
 
+  // Scale Winners — explicit MOF/BOF suggestions per winner ad. Runs BEFORE
+  // renderGapBox so the panel sits visually above the (broader) gap table.
+  renderScaleWinners(WINNERS);
+
   // Gap Box — Next Tests recommender (renderGapBox defined below)
   renderGapBox(ADS, ANGLES, PERSONAS);
 
@@ -741,6 +745,316 @@ function hashStr(s) {
     h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
   }
   return Math.abs(h);
+}
+
+// ── 4a-1c. SCALE WINNERS ──
+// Per the product spec: "We got the winner ad of a funnel supposed TOF, so our
+// tool analyzes it & tells us to use the angle, persona for MOF, BOF ads."
+// The Gap Analysis table already ranks these as winner-adjacent at PRIORITY 1,
+// but burying them in 8+ rows of generic gaps loses the "scale this proven
+// angle×persona to other funnel stages" intent. This panel surfaces it directly.
+
+function renderScaleWinners(winners) {
+  winners = winners || (typeof WINNERS !== 'undefined' ? WINNERS : []);
+  var el = document.getElementById('scaleWinnersBox');
+  if (!el) return;
+
+  // Build a set of "angle::persona::funnel" keys present in ADS for "tested?"
+  // checks. Any ad in the cell counts — its status is irrelevant; what matters
+  // is that we already have a creative slated for that combination.
+  var adsArr = (typeof ADS !== 'undefined' && Array.isArray(ADS)) ? ADS : [];
+  var testedCells = {};
+  for (var ai = 0; ai < adsArr.length; ai++) {
+    var ad = adsArr[ai];
+    if (!ad || !ad.angle || !ad.persona || !ad.funnelStage) continue;
+    var key = ad.angle.trim() + '::' + ad.persona.trim() + '::' + ad.funnelStage.trim().toUpperCase();
+    testedCells[key] = true;
+  }
+
+  // For each winner, compute which OTHER funnel stages are still untested.
+  var cards = [];
+  var totalUntested = 0;
+  for (var wi = 0; wi < winners.length; wi++) {
+    var w = winners[wi];
+    if (!w || !w.parent) continue;
+    var p = w.parent;
+    var winFunnel = (p.funnelStage || '').toString().trim().toUpperCase();
+    var ang = (p.angle || '').trim();
+    var per = (p.persona || '').trim();
+    if (!winFunnel || !ang || !per) continue;
+
+    var untested = [];
+    for (var fi = 0; fi < FUNNEL_STAGES.length; fi++) {
+      var fs = FUNNEL_STAGES[fi];
+      if (fs === winFunnel) continue;
+      var ck = ang + '::' + per + '::' + fs;
+      if (!testedCells[ck]) untested.push(fs);
+    }
+    if (untested.length === 0) continue; // fully scaled — skip
+
+    totalUntested += untested.length;
+    cards.push({ winner: w, winFunnel: winFunnel, angle: ang, persona: per, untested: untested });
+  }
+
+  // ── Build HTML ──
+  var html = '<div class="scale-winners-wrapper">';
+  html += renderScaleWinnersStyle();
+
+  html +=
+    '<div class="sw-header">' +
+      '<h3 class="sw-title">Scale Winners</h3>' +
+      '<span class="sw-count-badge">' + mono(totalUntested) + ' untested funnel' + (totalUntested === 1 ? '' : 's') + '</span>' +
+    '</div>';
+
+  // Empty state — distinguish "no winners exist" from "all winners are scaled".
+  var anyWinners = false;
+  for (var qi = 0; qi < winners.length; qi++) {
+    if (winners[qi] && winners[qi].parent) { anyWinners = true; break; }
+  }
+  if (!anyWinners) {
+    html += '<div class="sw-empty">No winner ads yet — once an ad reaches Winner status, scale suggestions for the other funnel stages will appear here.</div>';
+    html += '</div>';
+    el.innerHTML = html;
+    return;
+  }
+  if (cards.length === 0) {
+    html += '<div class="sw-empty">🎯 All winners are fully scaled across TOF/MOF/BOF — great work!</div>';
+    html += '</div>';
+    el.innerHTML = html;
+    return;
+  }
+
+  // ── One card per winner with untested adjacent funnels ──
+  for (var ci = 0; ci < cards.length; ci++) {
+    var c = cards[ci];
+    var p2 = c.winner.parent;
+    var tier = (p2.winnerTier || '').trim();
+    var tierCls = tier === 'Massive' ? 'sw-tier-massive' :
+                  tier === 'Good'    ? 'sw-tier-good' :
+                  tier === 'Mild'    ? 'sw-tier-mild' : '';
+    var urgencyCls   = c.untested.length === 2 ? 'sw-urg-high' : 'sw-urg-med';
+    var urgencyLabel = c.untested.length === 2 ? 'High Urgency' : 'Medium Urgency';
+
+    html += '<div class="sw-card ' + urgencyCls + '" data-winner-id="' + esc(p2.id) + '">';
+
+    // Card head — title + winning funnel badge + tier + urgency
+    html += '<div class="sw-card-head">';
+    html += '<div class="sw-card-title">' + esc(p2.formatName || p2.id) + '</div>';
+    html += '<span class="sw-funnel-tag sw-funnel-' + c.winFunnel + '">' + esc(c.winFunnel) + ' Winner</span>';
+    if (tierCls) html += '<span class="sw-tier-badge ' + tierCls + '">' + esc(tier) + '</span>';
+    html += '<span class="sw-urgency-badge ' + urgencyCls + '">' + esc(urgencyLabel) + '</span>';
+    html += '</div>';
+
+    // Meta tags
+    html += '<div class="sw-meta-row">';
+    html += '<span class="sw-meta">Angle: <strong>' + esc(c.angle) + '</strong></span>';
+    html += '<span class="sw-meta">Persona: <strong>' + esc(c.persona) + '</strong></span>';
+    html += '</div>';
+
+    // Suggestions header
+    html += '<div class="sw-section-title">Next Funnel Steps</div>';
+
+    // One row per untested adjacent funnel
+    html += '<div class="sw-rows">';
+    for (var ui = 0; ui < c.untested.length; ui++) {
+      var fnl  = c.untested[ui];
+      var pool = FUNNEL_FORMAT_SUGGESTIONS[fnl] || [];
+      var suggested = pool.length > 0 ? pool[hashStr(c.angle + c.persona) % pool.length] : '';
+      html += '<div class="sw-row">';
+      html +=   '<span class="sw-funnel-tag sw-funnel-' + fnl + '">' + esc(fnl) + '</span>';
+      html +=   '<span class="sw-row-format">' + esc(suggested) + '</span>';
+      html +=   '<span class="sw-row-desc">Test <strong>' + esc(c.angle) + '</strong> × <strong>' + esc(c.persona) + '</strong> at ' + esc(fnl) + '</span>';
+      html +=   '<button type="button" class="sw-create-btn" ' +
+                  'data-card-idx="' + ci + '" ' +
+                  'data-funnel="' + esc(fnl) + '" ' +
+                  'data-format="' + esc(suggested) + '">Create Task</button>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    html += '</div>'; // .sw-card
+  }
+
+  html += '</div>'; // .scale-winners-wrapper
+  el.innerHTML = html;
+
+  // Wire Create Task buttons — reuse createGapTaskFromRow exactly as the gap
+  // table does. The function toggles .nt-creating / .nt-success / .nt-failed
+  // on the button; styles for those state classes are mirrored under
+  // .scale-winners-wrapper in renderScaleWinnersStyle below.
+  var btns = el.querySelectorAll('.sw-create-btn');
+  for (var bi = 0; bi < btns.length; bi++) {
+    btns[bi].addEventListener('click', function(e) {
+      var btn = e.currentTarget;
+      if (btn.disabled) return;
+      var cardIdx = parseInt(btn.getAttribute('data-card-idx'), 10);
+      var card = cards[cardIdx];
+      if (!card) return;
+      var fnl = btn.getAttribute('data-funnel');
+      var fmt = btn.getAttribute('data-format');
+      var gap = {
+        angle:    card.angle,
+        persona:  card.persona,
+        funnel:   fnl,
+        format:   fmt,
+        priority: PRIORITY.WINNER_ADJACENT,
+        reason:   card.winFunnel + ' winner — scale to ' + fnl,
+        siblingWinner: true
+      };
+      createGapTaskFromRow(gap, btn);
+    });
+  }
+}
+
+function renderScaleWinnersStyle() {
+  // Scoped under .scale-winners-wrapper. Uses real app tokens (--card, --b,
+  // --t1/t2/t3, --test, --holo, --r, --rs); tier/funnel pills mirror the
+  // Winner Variations and Gap Box palettes for visual parity.
+  return (
+    '<style>' +
+
+    /* ── Wrapper card — matches .next-tests-wrapper / .winner-variations-wrapper ── */
+    '.scale-winners-wrapper{' +
+      'background:var(--card);' +
+      'border:1px solid var(--b);' +
+      'border-radius:var(--r);' +
+      'box-shadow:0 1px 3px rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.02);' +
+      'overflow:hidden;margin-top:16px;' +
+      'color:var(--t1);font-family:inherit;position:relative;' +
+    '}' +
+    '.scale-winners-wrapper::before{' +
+      'content:"";position:absolute;top:0;left:0;right:0;height:2px;' +
+      'background:var(--holo);pointer-events:none;z-index:2;' +
+    '}' +
+
+    /* ── Header ── */
+    '.scale-winners-wrapper .sw-header{' +
+      'display:flex;align-items:center;gap:10px;' +
+      'padding:16px 18px 14px;' +
+      'border-bottom:1px solid var(--b);' +
+    '}' +
+    '.scale-winners-wrapper .sw-title{' +
+      'margin:0;font-size:0.85rem;font-weight:600;color:var(--t1);' +
+    '}' +
+    '.scale-winners-wrapper .sw-count-badge{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 9px;border-radius:10px;' +
+      'background:var(--test);color:#fff;' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;' +
+    '}' +
+
+    /* ── Empty state ── */
+    '.scale-winners-wrapper .sw-empty{' +
+      'padding:32px 20px;text-align:center;' +
+      'color:var(--t3);font-size:0.82rem;' +
+    '}' +
+
+    /* ── Winner card ── */
+    '.scale-winners-wrapper .sw-card{' +
+      'padding:16px 20px;border-bottom:1px solid var(--b);' +
+    '}' +
+    '.scale-winners-wrapper .sw-card:last-child{border-bottom:none;}' +
+    '.scale-winners-wrapper .sw-card-head{' +
+      'display:flex;flex-wrap:wrap;align-items:center;gap:10px;' +
+      'margin-bottom:8px;' +
+    '}' +
+    '.scale-winners-wrapper .sw-card-title{' +
+      'font-size:0.82rem;font-weight:600;color:var(--t1);' +
+    '}' +
+    '.scale-winners-wrapper .sw-meta-row{' +
+      'display:flex;flex-wrap:wrap;gap:14px;' +
+      'margin-bottom:14px;' +
+    '}' +
+    '.scale-winners-wrapper .sw-meta{' +
+      'font-size:0.72rem;color:var(--t2);' +
+    '}' +
+    '.scale-winners-wrapper .sw-meta strong{color:var(--t1);font-weight:600;}' +
+
+    /* ── Section header ── */
+    '.scale-winners-wrapper .sw-section-title{' +
+      'font-size:0.65rem;font-weight:600;text-transform:uppercase;' +
+      'letter-spacing:0.06em;color:var(--t3);' +
+      'margin-bottom:8px;' +
+    '}' +
+
+    /* ── Suggestion rows — subtle indigo wash + left border in --test ── */
+    '.scale-winners-wrapper .sw-rows{display:flex;flex-direction:column;gap:8px;}' +
+    '.scale-winners-wrapper .sw-row{' +
+      'display:grid;grid-template-columns:auto 180px 1fr auto;' +
+      'gap:12px;align-items:center;' +
+      'padding:10px 12px;' +
+      'background:rgba(79,70,229,0.04);' +
+      'border-left:3px solid var(--test);' +
+      'border-radius:var(--rs);' +
+      'font-size:0.75rem;' +
+    '}' +
+    '.scale-winners-wrapper .sw-row-format{' +
+      'font-weight:500;color:var(--t1);' +
+    '}' +
+    '.scale-winners-wrapper .sw-row-desc{' +
+      'color:var(--t2);font-size:0.72rem;line-height:1.4;' +
+    '}' +
+    '.scale-winners-wrapper .sw-row-desc strong{color:var(--t1);font-weight:600;}' +
+
+    /* ── Funnel pills (same palette as .nt-funnel-XXX / .wv-funnel-XXX) ── */
+    '.scale-winners-wrapper .sw-funnel-tag{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 7px;border-radius:4px;' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;' +
+    '}' +
+    '.scale-winners-wrapper .sw-funnel-TOF{background:#dcfce7;color:#15803d;}' +
+    '.scale-winners-wrapper .sw-funnel-MOF{background:#dbeafe;color:#1d4ed8;}' +
+    '.scale-winners-wrapper .sw-funnel-BOF{background:#fce7f3;color:#be185d;}' +
+
+    /* ── Tier badges (mirror .wv-tier-*) ── */
+    '.scale-winners-wrapper .sw-tier-badge{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 8px;border-radius:10px;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;' +
+    '}' +
+    '.scale-winners-wrapper .sw-tier-massive{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}' +
+    '.scale-winners-wrapper .sw-tier-good{background:#fffbeb;color:#b45309;border:1px solid #fde68a;}' +
+    '.scale-winners-wrapper .sw-tier-mild{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}' +
+
+    /* ── Urgency badges ── */
+    '.scale-winners-wrapper .sw-urgency-badge{' +
+      'display:inline-flex;align-items:center;' +
+      'padding:2px 8px;border-radius:10px;' +
+      'font-size:0.65rem;font-weight:600;letter-spacing:0.02em;' +
+    '}' +
+    '.scale-winners-wrapper .sw-urg-high{background:#fef3c7;color:#92400e;border:1px solid #fde68a;}' +
+    '.scale-winners-wrapper .sw-urg-med{background:#ede9fe;color:#5b21b6;border:1px solid #ddd6fe;}' +
+
+    /* ── Create Task button (mirrors .nt-create-btn) ── */
+    '.scale-winners-wrapper .sw-create-btn{' +
+      'padding:5px 12px;border-radius:6px;' +
+      'border:1px solid #e2e8f0;' +
+      'background:#fff;color:#64748b;' +
+      'font-family:inherit;' +
+      'font-size:0.7rem;font-weight:500;' +
+      'cursor:pointer;white-space:nowrap;' +
+      'transition:background .15s, border-color .15s, color .15s, transform .1s;' +
+    '}' +
+    '.scale-winners-wrapper .sw-create-btn:hover:not(:disabled){' +
+      'background:var(--test);border-color:var(--test);color:#fff;' +
+    '}' +
+    '.scale-winners-wrapper .sw-create-btn:active:not(:disabled){transform:scale(0.97);}' +
+    '.scale-winners-wrapper .sw-create-btn:disabled{cursor:default;}' +
+    /* createGapTaskFromRow toggles these state classes — keep visible styling */
+    '.scale-winners-wrapper .sw-create-btn.nt-creating{' +
+      'background:#f1f5f9;border-color:#e2e8f0;color:#64748b;opacity:0.7;' +
+    '}' +
+    '.scale-winners-wrapper .sw-create-btn.nt-success{' +
+      'background:#dcfce7;border-color:#bbf7d0;color:#15803d;' +
+    '}' +
+    '.scale-winners-wrapper .sw-create-btn.nt-failed{' +
+      'background:#fee2e2;border-color:#fecaca;color:#dc2626;' +
+    '}' +
+
+    '</style>'
+  );
 }
 
 // ── 4a-2. WINNER VARIATIONS ──

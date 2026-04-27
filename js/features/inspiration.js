@@ -1135,19 +1135,22 @@ function renderInspirations() {
       '<td style="white-space:nowrap">'+tagPills+'</td>' +
       // 20. Reuse
       '<td>'+reuseBadge+'</td>' +
-      // 21. Actions
+      // 21. Actions — error rows show only the source link; everything else
+      // is hidden because the data is invalid and there's nothing to act on.
       '<td class="ins-actions">' +
-        '<a href="'+escAttr(ins.sourceUrl)+'" target="_blank" class="ins-icon-btn" title="Open source">&#8599;</a>' +
-        (isQueued ? '' : '<button class="ins-icon-btn" onclick="useInspirationFormat('+insIdQ+')" title="Use this format">+</button>') +
-        ((ins.status==='Classified' && (!ins.angle || !ins.persona))
-          ? '<button class="ins-icon-btn ins-map-btn" onclick="remapInspirationFields('+insIdQ+')" title="Map angle &amp; persona">🗺</button>'
-          : '') +
-        (ins.status==='Classified'
-          ? (_hasEditorTaskFor(ins.id)
-              ? '<button class="ins-icon-btn et-btn done" disabled title="Editor task already created">✓ Done</button>'
-              : '<button class="ins-icon-btn et-btn'+(_etOpenInsId===ins.id?' open':'')+'" onclick="toggleEditorTaskPanel('+insIdQ+')" title="Create editor task">📋 Editor Task</button>')
-          : '') +
-        '<button class="ins-icon-btn" onclick="deleteInspiration('+insIdQ+')" title="Delete" style="color:#ef4444">&#215;</button>' +
+        (ins.sourceUrl ? '<a href="'+escAttr(ins.sourceUrl)+'" target="_blank" class="ins-icon-btn" title="Open source">&#8599;</a>' : '') +
+        (isError ? '' : (
+          (isQueued ? '' : '<button class="ins-icon-btn" onclick="useInspirationFormat('+insIdQ+')" title="Use this format">+</button>') +
+          ((ins.status==='Classified' && (!ins.angle || !ins.persona))
+            ? '<button class="ins-icon-btn ins-map-btn" onclick="remapInspirationFields('+insIdQ+')" title="Map angle &amp; persona">🗺</button>'
+            : '') +
+          (ins.status==='Classified'
+            ? (_hasEditorTaskFor(ins.id)
+                ? '<button class="ins-icon-btn et-btn done" disabled title="Editor task already created">✓ Done</button>'
+                : '<button class="ins-icon-btn et-btn'+(_etOpenInsId===ins.id?' open':'')+'" onclick="toggleEditorTaskPanel('+insIdQ+')" title="Create editor task">📋 Editor Task</button>')
+            : '') +
+          '<button class="ins-icon-btn" onclick="deleteInspiration('+insIdQ+')" title="Delete" style="color:#ef4444">&#215;</button>'
+        )) +
       '</td>' +
     '</tr>';
 
@@ -2301,14 +2304,23 @@ function _injectEditorTaskStyles() {
   var st = document.createElement('style');
   st.id = 'editor-task-styles';
   st.textContent =
-    /* Trigger button in the actions cell */
-    '.ins-icon-btn.et-btn{font-size:0.65rem;padding:3px 8px;background:rgba(79,70,229,0.08);' +
-      'color:var(--test);border:1px solid rgba(79,70,229,0.25);border-radius:var(--rs);' +
-      'font-weight:600;white-space:nowrap;line-height:1.2;}' +
-    '.ins-icon-btn.et-btn:hover{background:rgba(79,70,229,0.16);}' +
+    /* Keep the actions cell tight and vertically centered. The cell is already
+       display:flex; gap:6px in modals.css — we just add align-items:center so
+       the variable-width Editor Task pill aligns with the 28px icon buttons. */
+    '.ins-actions{align-items:center;flex-wrap:nowrap;}' +
+
+    /* Trigger button in the actions cell — outlined pill that matches the
+       other .ins-icon-btn buttons in height and font size. Override the base
+       28px square sizing so the text fits. */
+    '.ins-icon-btn.et-btn{width:auto;height:28px;padding:0 12px;font-size:0.75rem;' +
+      'font-weight:600;white-space:nowrap;line-height:1;background:transparent;' +
+      'color:var(--test);border:1px solid var(--test);border-radius:var(--rs);' +
+      'display:inline-flex;align-items:center;gap:4px;}' +
+    '.ins-icon-btn.et-btn:hover{background:var(--test);color:#fff;border-color:var(--test);}' +
     '.ins-icon-btn.et-btn.open{background:var(--test);color:#fff;border-color:var(--test);}' +
-    '.ins-icon-btn.et-btn.done{background:rgba(5,150,105,0.1);color:#059669;' +
-      'border-color:rgba(5,150,105,0.25);cursor:default;}' +
+    '.ins-icon-btn.et-btn.done{background:transparent;color:#059669;' +
+      'border-color:rgba(5,150,105,0.55);cursor:default;}' +
+    '.ins-icon-btn.et-btn.done:hover{background:transparent;color:#059669;}' +
 
     /* Panel wrapper — sits in a colspan=22 row directly below its inspiration */
     '.et-panel-wrap{background:var(--card);border:1px solid var(--b);border-radius:var(--r);' +

@@ -949,20 +949,34 @@ function renderInspirations() {
     var insId = ins.id;
     var insIdQ = '\'' + escAttr(insId) + '\'';
 
-    // Build angle select
+    // Build angle select — if ins.angle isn't in the product's taxonomy
+    // (common for cross-niche inspiration ads), surface the raw value as
+    // its own selected option so the cell is readable instead of "— custom —".
+    var angleHasMatch = ANGLES.some(function(a){ return a.name === ins.angle; });
     var angleOpts = ANGLES.map(function(a){
       return '<option value="'+escAttr(a.name)+'"'+(ins.angle===a.name?' selected':'')+'>'+esc(a.name)+'</option>';
-    }).join('') + '<option value="__custom__"'+(ins.angle && !ANGLES.some(function(a){return a.name===ins.angle;})?' selected':'')+'>— custom —</option>';
+    }).join('');
+    if (ins.angle && !angleHasMatch) {
+      angleOpts += '<option value="'+escAttr(ins.angle)+'" selected>'+esc(ins.angle)+'</option>';
+    }
 
-    // Build persona select
+    // Build persona select — same fallback as angle.
+    var personaHasMatch = PERSONAS.some(function(p){ return p.name === ins.persona; });
     var personaOpts = PERSONAS.map(function(p){
       return '<option value="'+escAttr(p.name)+'"'+(ins.persona===p.name?' selected':'')+'>'+esc(p.name)+'</option>';
-    }).join('') + '<option value="__custom__"'+(ins.persona && !PERSONAS.some(function(p){return p.name===ins.persona;})?' selected':'')+'>— custom —</option>';
+    }).join('');
+    if (ins.persona && !personaHasMatch) {
+      personaOpts += '<option value="'+escAttr(ins.persona)+'" selected>'+esc(ins.persona)+'</option>';
+    }
 
-    // Build structure select
+    // Build structure select — same fallback for off-taxonomy values.
+    var structureHasMatch = CREATIVE_STRUCTURES.indexOf(ins.creativeStructure) !== -1;
     var structureOpts = [''].concat(CREATIVE_STRUCTURES).map(function(s){
       return '<option value="'+escAttr(s)+'"'+(ins.creativeStructure===s?' selected':'')+'>'+esc(s||'—')+'</option>';
     }).join('');
+    if (ins.creativeStructure && !structureHasMatch) {
+      structureOpts += '<option value="'+escAttr(ins.creativeStructure)+'" selected>'+esc(ins.creativeStructure)+'</option>';
+    }
 
     // Build hook select
     var hookOpts = [''].concat(HOOK_TYPES).map(function(h){

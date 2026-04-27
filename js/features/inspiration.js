@@ -946,37 +946,27 @@ function renderInspirations() {
       : '<span class="ins-reuse-pill" title="Not yet used">0</span>';
     var funnelColor = ins.funnelStage==='TOF'?'#6366f1':ins.funnelStage==='MOF'?'#f59e0b':'#10b981';
     var isQueued = ins.status === 'Queued';
+    var isError  = ins.status === 'Error' || ins.status === 'error';
     var insId = ins.id;
     var insIdQ = '\'' + escAttr(insId) + '\'';
 
-    // Build angle select — if ins.angle isn't in the product's taxonomy
-    // (common for cross-niche inspiration ads), surface the raw value as
-    // its own selected option so the cell is readable instead of "— custom —".
+    // Build angle/persona/structure dropdowns. Cross-niche values (those not
+    // in the product's taxonomy) are rendered as plain text in the cell render
+    // below — the dropdown is only emitted when the value is empty or matches.
     var angleHasMatch = ANGLES.some(function(a){ return a.name === ins.angle; });
     var angleOpts = ANGLES.map(function(a){
       return '<option value="'+escAttr(a.name)+'"'+(ins.angle===a.name?' selected':'')+'>'+esc(a.name)+'</option>';
     }).join('');
-    if (ins.angle && !angleHasMatch) {
-      angleOpts += '<option value="'+escAttr(ins.angle)+'" selected>'+esc(ins.angle)+'</option>';
-    }
 
-    // Build persona select — same fallback as angle.
     var personaHasMatch = PERSONAS.some(function(p){ return p.name === ins.persona; });
     var personaOpts = PERSONAS.map(function(p){
       return '<option value="'+escAttr(p.name)+'"'+(ins.persona===p.name?' selected':'')+'>'+esc(p.name)+'</option>';
     }).join('');
-    if (ins.persona && !personaHasMatch) {
-      personaOpts += '<option value="'+escAttr(ins.persona)+'" selected>'+esc(ins.persona)+'</option>';
-    }
 
-    // Build structure select — same fallback for off-taxonomy values.
     var structureHasMatch = CREATIVE_STRUCTURES.indexOf(ins.creativeStructure) !== -1;
     var structureOpts = [''].concat(CREATIVE_STRUCTURES).map(function(s){
       return '<option value="'+escAttr(s)+'"'+(ins.creativeStructure===s?' selected':'')+'>'+esc(s||'—')+'</option>';
     }).join('');
-    if (ins.creativeStructure && !structureHasMatch) {
-      structureOpts += '<option value="'+escAttr(ins.creativeStructure)+'" selected>'+esc(ins.creativeStructure)+'</option>';
-    }
 
     // Build hook select
     var hookOpts = [''].concat(HOOK_TYPES).map(function(h){
@@ -1036,22 +1026,35 @@ function renderInspirations() {
         :
       // 3. Brand
       '<td style="font-size:0.73rem;font-weight:500;white-space:nowrap">'+esc(ins.brand||'\u2014')+'</td>' +
-      // 4. Angle
-      '<td>' +
-        (ins._needsAngleReview ? '<span title="Needs mapping" style="color:#f59e0b;font-size:0.6rem;margin-right:2px;cursor:pointer" onclick="remapInspirationFields('+insIdQ+')">⚠</span>' : '') +
-        '<select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'angle\',this.value)">'+angleOpts+'</select>' +
-      '</td>' +
+      // 4. Angle — error: dash; cross-niche (unmatched value): plain text;
+      // empty or matched: editable dropdown.
+      (isError
+        ? '<td>—</td>'
+        : (ins.angle && !angleHasMatch
+          ? '<td style="font-size:0.7rem;color:var(--t1)" title="Cross-niche value (not in product taxonomy)">'+esc(ins.angle)+'</td>'
+          : '<td><select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'angle\',this.value)">'+angleOpts+'</select></td>'
+        )
+      ) +
       // 5. Persona
-      '<td>' +
-        (ins._needsPersonaReview ? '<span title="Needs mapping" style="color:#f59e0b;font-size:0.6rem;margin-right:2px;cursor:pointer" onclick="remapInspirationFields('+insIdQ+')">⚠</span>' : '') +
-        '<select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'persona\',this.value)">'+personaOpts+'</select>' +
-      '</td>' +
+      (isError
+        ? '<td>—</td>'
+        : (ins.persona && !personaHasMatch
+          ? '<td style="font-size:0.7rem;color:var(--t1)" title="Cross-niche value (not in product taxonomy)">'+esc(ins.persona)+'</td>'
+          : '<td><select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'persona\',this.value)">'+personaOpts+'</select></td>'
+        )
+      ) +
       // 6. Structure
-      '<td><select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'creativeStructure\',this.value)">'+structureOpts+'</select></td>' +
+      (isError
+        ? '<td>—</td>'
+        : (ins.creativeStructure && !structureHasMatch
+          ? '<td style="font-size:0.7rem;color:var(--t1)" title="Cross-niche value (not in product taxonomy)">'+esc(ins.creativeStructure)+'</td>'
+          : '<td><select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'creativeStructure\',this.value)">'+structureOpts+'</select></td>'
+        )
+      ) +
       // 7. Hook
-      '<td><select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'hookType\',this.value)">'+hookOpts+'</select></td>' +
+      (isError ? '<td>—</td>' : '<td><select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'hookType\',this.value)">'+hookOpts+'</select></td>') +
       // 8. Production
-      '<td><select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'productionStyle\',this.value)">'+prodOpts+'</select></td>' +
+      (isError ? '<td>—</td>' : '<td><select class="ins-inline-select" onchange="updateInsField('+insIdQ+',\'productionStyle\',this.value)">'+prodOpts+'</select></td>') +
       // 9. Funnel
       '<td><select class="ins-inline-select" style="color:'+funnelColor+'" onchange="updateInsField('+insIdQ+',\'funnelStage\',this.value)">'+funnelOpts+'</select></td>' +
       // 10. Ad Type
@@ -1135,7 +1138,7 @@ function renderInspirations() {
       '<td class="ins-actions">' +
         '<a href="'+escAttr(ins.sourceUrl)+'" target="_blank" class="ins-icon-btn" title="Open source">&#8599;</a>' +
         (isQueued ? '' : '<button class="ins-icon-btn" onclick="useInspirationFormat('+insIdQ+')" title="Use this format">+</button>') +
-        ((ins._needsAngleReview || ins._needsPersonaReview || (ins.status==='Classified' && (!ins.angle || !ins.persona)))
+        ((ins.status==='Classified' && (!ins.angle || !ins.persona))
           ? '<button class="ins-icon-btn ins-map-btn" onclick="remapInspirationFields('+insIdQ+')" title="Map angle &amp; persona">🗺</button>'
           : '') +
         '<button class="ins-icon-btn" onclick="deleteInspiration('+insIdQ+')" title="Delete" style="color:#ef4444">&#215;</button>' +

@@ -873,6 +873,7 @@ function hideInsTooltip() {
 function renderInspirations() {
   // Idempotent: ensures style block + queue badge + filter chips exist
   _injectInspirationStyles();
+  _injectEditorTaskStyles();
   _ensureInspirationDom();
 
   var platform = (document.getElementById('insFiltPlatform')||{}).value || '';
@@ -1141,6 +1142,11 @@ function renderInspirations() {
         ((ins.status==='Classified' && (!ins.angle || !ins.persona))
           ? '<button class="ins-icon-btn ins-map-btn" onclick="remapInspirationFields('+insIdQ+')" title="Map angle &amp; persona">🗺</button>'
           : '') +
+        (ins.status==='Classified'
+          ? (_hasEditorTaskFor(ins.id)
+              ? '<button class="ins-icon-btn et-btn done" disabled title="Editor task already created">✓ Done</button>'
+              : '<button class="ins-icon-btn et-btn'+(_etOpenInsId===ins.id?' open':'')+'" onclick="toggleEditorTaskPanel('+insIdQ+')" title="Create editor task">📋 Editor Task</button>')
+          : '') +
         '<button class="ins-icon-btn" onclick="deleteInspiration('+insIdQ+')" title="Delete" style="color:#ef4444">&#215;</button>' +
       '</td>' +
     '</tr>';
@@ -1184,7 +1190,9 @@ function renderInspirations() {
       '</td></tr>';
     }
 
-    return mainRow + dupeRow;
+    var panelRow = (_etOpenInsId === ins.id) ? _renderEditorTaskPanelRow(ins) : '';
+
+    return mainRow + dupeRow + panelRow;
   }).join('');
 }
 
@@ -2044,4 +2052,307 @@ function _insRelTime(ms) {
   if (h < 24) return h + ' hour' + (h > 1 ? 's' : '') + ' ago';
   var d = Math.floor(h / 24);
   return d + ' day' + (d > 1 ? 's' : '') + ' ago';
+}
+
+// ── Editor Task panel ────────────────────────────────────────────────────────
+// Per-row inline form that builds a MANUAL_ACTIONS entry from inspiration data
+// and pushes it to ClickUp via createClickUpTaskFromAction. Only one panel
+// open at a time; Escape closes; success → "✓ Done" badge persists across
+// reloads by looking up MANUAL_ACTIONS for any action linked to this ins.id.
+
+var _etOpenInsId = null;
+
+function _hasEditorTaskFor(insId) {
+  if (typeof MANUAL_ACTIONS === 'undefined' || !Array.isArray(MANUAL_ACTIONS)) return false;
+  for (var i = 0; i < MANUAL_ACTIONS.length; i++) {
+    var a = MANUAL_ACTIONS[i];
+    if (a && a.inspirationId === insId && a._clickupId) return true;
+  }
+  return false;
+}
+
+function _buildEditorTaskDescription(ins) {
+  return 'Inspiration: ' + (ins.brand || '') + ' ad\n\n' +
+         'Hook: ' + (ins.hookType || '') + '\n' +
+         'Structure: ' + (ins.creativeStructure || '') + '\n' +
+         'Funnel: ' + (ins.funnelStage || '') + '\n\n' +
+         'What to replicate:\n' + (ins.notes || '') + '\n\n' +
+         'Hypothesis:\n' + (ins.creativeHypothesis || '');
+}
+
+function toggleEditorTaskPanel(insId) {
+  if (_etOpenInsId === insId) {
+    _etOpenInsId = null;
+  } else {
+    _etOpenInsId = insId;
+  }
+  renderInspirations();
+  if (_etOpenInsId) {
+    // Defer one tick so the new <tr> exists, then scroll it into view + focus.
+    setTimeout(function() {
+      var first = document.getElementById('et-inspirationLink-' + _etOpenInsId);
+      if (first) {
+        try { first.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+        try { first.focus({ preventScroll: true }); } catch (e) { try { first.focus(); } catch (e2) {} }
+      }
+    }, 40);
+  }
+}
+
+function cancelEditorTaskPanel() {
+  if (_etOpenInsId === null) return;
+  _etOpenInsId = null;
+  renderInspirations();
+}
+
+function _renderEditorTaskPanelRow(ins) {
+  var idA = escAttr(ins.id);
+  var insIdQ = '\'' + idA + '\'';
+  var srcLink = ins.sourceUrl || ins.url || '';
+  var funnel  = ins.funnelStage || 'TOF';
+  var fmt     = ins.formatName || '';
+  var what    = ins.creativeHypothesis || '';
+  var desc    = _buildEditorTaskDescription(ins);
+
+  var funnelOpts = FUNNEL_STAGES.map(function(f) {
+    return '<option value="'+escAttr(f)+'"'+(f===funnel?' selected':'')+'>'+esc(f)+'</option>';
+  }).join('');
+
+  var prioOpts = ['normal', 'high', 'urgent'].map(function(p) {
+    var label = p.charAt(0).toUpperCase() + p.slice(1);
+    return '<option value="'+p+'"'+(p==='normal'?' selected':'')+'>'+label+'</option>';
+  }).join('');
+
+  return '<tr class="et-panel-row" data-et-for="'+idA+'"><td colspan="22" style="padding:0 12px 12px;background:rgba(15,23,42,0.025)">' +
+    '<div class="et-panel-wrap">' +
+      '<div class="et-panel-header">' +
+        '<span class="et-panel-title">📋 Create Editor Task — '+esc(ins.brand||ins.id)+'</span>' +
+        '<button class="et-panel-close" onclick="cancelEditorTaskPanel()" title="Cancel (Esc)" aria-label="Close">×</button>' +
+      '</div>' +
+      '<div class="et-form-grid">' +
+        '<div class="et-field">' +
+          '<label for="et-inspirationLink-'+idA+'">Inspiration Link</label>' +
+          '<input type="url" id="et-inspirationLink-'+idA+'" value="'+escAttr(srcLink)+'">' +
+        '</div>' +
+        '<div class="et-field">' +
+          '<label for="et-brand-'+idA+'">Brand</label>' +
+          '<input type="text" id="et-brand-'+idA+'" value="'+escAttr(ins.brand||'')+'">' +
+        '</div>' +
+        '<div class="et-field">' +
+          '<label for="et-angle-'+idA+'">Angle</label>' +
+          '<input type="text" id="et-angle-'+idA+'" value="'+escAttr(ins.angle||'')+'">' +
+        '</div>' +
+        '<div class="et-field">' +
+          '<label for="et-funnel-'+idA+'">Funnel</label>' +
+          '<select id="et-funnel-'+idA+'">'+funnelOpts+'</select>' +
+        '</div>' +
+        '<div class="et-field">' +
+          '<label for="et-persona-'+idA+'">Persona</label>' +
+          '<input type="text" id="et-persona-'+idA+'" value="'+escAttr(ins.persona||'')+'">' +
+        '</div>' +
+        '<div class="et-field">' +
+          '<label for="et-hook-'+idA+'">Hook Type</label>' +
+          '<input type="text" id="et-hook-'+idA+'" value="'+escAttr(ins.hookType||'')+'">' +
+        '</div>' +
+        '<div class="et-field">' +
+          '<label for="et-structure-'+idA+'">Creative Structure</label>' +
+          '<input type="text" id="et-structure-'+idA+'" value="'+escAttr(ins.creativeStructure||'')+'">' +
+        '</div>' +
+        '<div class="et-field">' +
+          '<label for="et-format-'+idA+'">Ad Format Suggestion</label>' +
+          '<input type="text" id="et-format-'+idA+'" value="'+escAttr(fmt)+'">' +
+        '</div>' +
+        '<div class="et-field">' +
+          '<label for="et-priority-'+idA+'">Priority</label>' +
+          '<select id="et-priority-'+idA+'">'+prioOpts+'</select>' +
+        '</div>' +
+        '<div class="et-field et-full">' +
+          '<label for="et-what-'+idA+'">What we want</label>' +
+          '<textarea id="et-what-'+idA+'" rows="3">'+esc(what)+'</textarea>' +
+        '</div>' +
+        '<div class="et-field et-full">' +
+          '<label for="et-desc-'+idA+'">Description for editor</label>' +
+          '<textarea id="et-desc-'+idA+'" rows="6">'+esc(desc)+'</textarea>' +
+        '</div>' +
+      '</div>' +
+      '<div class="et-actions">' +
+        '<button class="et-cancel" type="button" onclick="cancelEditorTaskPanel()">Cancel</button>' +
+        '<button class="et-submit" type="button" id="et-submit-'+idA+'" onclick="submitEditorTask('+insIdQ+')">Create ClickUp Task</button>' +
+      '</div>' +
+    '</div>' +
+  '</td></tr>';
+}
+
+function submitEditorTask(insId) {
+  var ins = INSPIRATIONS.find(function(i) { return i.id === insId; });
+  if (!ins) return;
+
+  var idA = escAttr(insId);
+  var submitBtn = document.getElementById('et-submit-' + idA);
+  if (!submitBtn || submitBtn.disabled) return;
+
+  var getVal = function(prefix) {
+    var el = document.getElementById('et-' + prefix + '-' + idA);
+    return el ? el.value : '';
+  };
+
+  var form = {
+    inspirationLink:   (getVal('inspirationLink') || '').trim(),
+    brand:             (getVal('brand') || '').trim(),
+    angle:             (getVal('angle') || '').trim(),
+    funnel:            (getVal('funnel') || 'TOF').trim().toUpperCase(),
+    persona:           (getVal('persona') || '').trim(),
+    hookType:          (getVal('hook') || '').trim(),
+    creativeStructure: (getVal('structure') || '').trim(),
+    adFormat:          (getVal('format') || '').trim(),
+    priority:          (getVal('priority') || 'normal').trim().toLowerCase(),
+    whatWeWant:        getVal('what') || '',
+    description:       getVal('desc') || ''
+  };
+
+  if (typeof MANUAL_ACTIONS === 'undefined' || typeof createClickUpTaskFromAction !== 'function') {
+    if (typeof toast === 'function') toast('Cannot create task — MANUAL_ACTIONS / createClickUpTaskFromAction unavailable', 'err');
+    submitBtn.classList.add('failed');
+    submitBtn.textContent = '✗ Failed';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.classList.remove('failed', 'success');
+  submitBtn.textContent = 'Creating…';
+
+  var dueDate = (typeof todayISO === 'function')
+    ? todayISO()
+    : new Date().toISOString().split('T')[0];
+
+  var newAction = {
+    id: 'manual-' + Date.now() + '-ins',
+    priority: form.priority,
+    title: '[INS] ' + (ins.brand || '') + ' — ' + (ins.angle || '') + ' (' + (ins.funnelStage || '') + ')',
+    reason: form.description,
+    tag: 'editor-task',
+    angle: form.angle,
+    persona: form.persona,
+    funnelStage: form.funnel,
+    format: form.adFormat,
+    dueDate: dueDate,
+    description: form.description,
+    adId: ins.id,
+    adLink: form.inspirationLink,
+    _clickupId: null,
+    liveStatus: 'Untested',
+    sourceAdId: ins.id,
+    sourceAngle: form.angle,
+    sourcePersona: form.persona,
+    isEditorTask: true,
+    inspirationId: ins.id,
+    inspirationLink: form.inspirationLink,
+    whatWeWant: form.whatWeWant,
+    hookType: form.hookType,
+    creativeStructure: form.creativeStructure
+  };
+
+  MANUAL_ACTIONS.push(newAction);
+  if (typeof saveState === 'function')         saveState();
+  if (typeof genActions === 'function')        genActions();
+  if (typeof renderActionPlan === 'function')  renderActionPlan();
+
+  createClickUpTaskFromAction(newAction.id, function(ok) {
+    // The renderActionPlan above may have re-rendered — fetch the button freshly.
+    var btnNow = document.getElementById('et-submit-' + idA);
+    if (ok) {
+      if (btnNow) {
+        btnNow.classList.add('success');
+        btnNow.textContent = '✓ Task Created';
+      }
+      setTimeout(function() {
+        _etOpenInsId = null;
+        renderInspirations();
+        if (typeof toast === 'function') {
+          toast('Editor task created for ' + (ins.brand || ins.id), 'ok');
+        }
+      }, 700);
+    } else {
+      if (btnNow) {
+        btnNow.classList.add('failed');
+        btnNow.textContent = '✗ Failed';
+        btnNow.disabled = false;
+      }
+    }
+  });
+}
+
+function _injectEditorTaskStyles() {
+  if (document.getElementById('editor-task-styles')) return;
+
+  // Global Escape handler — closes any open panel. Idempotent: keyed off the
+  // style tag check above, so we attach exactly once.
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && _etOpenInsId) {
+      // Don't swallow Escape if focus is in some other modal/dialog elsewhere.
+      var ae = document.activeElement;
+      var inPanel = ae && ae.closest && ae.closest('.et-panel-wrap');
+      if (inPanel || ae === document.body || !ae) {
+        cancelEditorTaskPanel();
+      }
+    }
+  });
+
+  var st = document.createElement('style');
+  st.id = 'editor-task-styles';
+  st.textContent =
+    /* Trigger button in the actions cell */
+    '.ins-icon-btn.et-btn{font-size:0.65rem;padding:3px 8px;background:rgba(79,70,229,0.08);' +
+      'color:var(--test);border:1px solid rgba(79,70,229,0.25);border-radius:var(--rs);' +
+      'font-weight:600;white-space:nowrap;line-height:1.2;}' +
+    '.ins-icon-btn.et-btn:hover{background:rgba(79,70,229,0.16);}' +
+    '.ins-icon-btn.et-btn.open{background:var(--test);color:#fff;border-color:var(--test);}' +
+    '.ins-icon-btn.et-btn.done{background:rgba(5,150,105,0.1);color:#059669;' +
+      'border-color:rgba(5,150,105,0.25);cursor:default;}' +
+
+    /* Panel wrapper — sits in a colspan=22 row directly below its inspiration */
+    '.et-panel-wrap{background:var(--card);border:1px solid var(--b);border-radius:var(--r);' +
+      'margin:6px 0 4px;padding:14px 18px 12px;position:relative;overflow:hidden;' +
+      'box-shadow:0 4px 14px rgba(15,23,42,0.06);color:var(--t1);' +
+      'animation:etPanelSlide 0.18s ease-out both;}' +
+    '.et-panel-wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;' +
+      'background:var(--holo);pointer-events:none;z-index:1;}' +
+    '@keyframes etPanelSlide{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}' +
+
+    '.et-panel-header{display:flex;align-items:center;justify-content:space-between;' +
+      'margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--b);}' +
+    '.et-panel-title{font-size:0.85rem;font-weight:600;color:var(--t1);}' +
+    '.et-panel-close{border:none;background:transparent;color:var(--t3);cursor:pointer;' +
+      'font-size:1.4rem;line-height:1;padding:0 6px;font-family:inherit;}' +
+    '.et-panel-close:hover{color:var(--t1);}' +
+
+    /* Form grid — 2 columns for short fields; .et-full spans both */
+    '.et-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-bottom:14px;}' +
+    '.et-field{display:flex;flex-direction:column;gap:4px;min-width:0;}' +
+    '.et-field.et-full{grid-column:1 / -1;}' +
+    '.et-field label{font-size:0.66rem;font-weight:600;color:var(--t2);' +
+      'text-transform:uppercase;letter-spacing:0.04em;}' +
+    '.et-field input,.et-field select,.et-field textarea{font-family:inherit;font-size:0.78rem;' +
+      'color:var(--t1);background:rgba(15,23,42,0.025);border:1px solid var(--b);' +
+      'border-radius:var(--rs);padding:7px 10px;outline:none;width:100%;box-sizing:border-box;' +
+      'transition:border-color 0.15s, box-shadow 0.15s, background 0.15s;}' +
+    '.et-field input:focus,.et-field select:focus,.et-field textarea:focus{' +
+      'border-color:var(--test);box-shadow:0 0 0 3px rgba(79,70,229,0.14);background:var(--card);}' +
+    '.et-field textarea{resize:vertical;min-height:64px;}' +
+
+    /* Actions row */
+    '.et-actions{display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--b);padding-top:12px;}' +
+    '.et-actions button{font-family:inherit;font-size:0.75rem;font-weight:600;padding:8px 16px;' +
+      'border-radius:var(--rs);cursor:pointer;border:1px solid transparent;' +
+      'transition:background 0.15s, transform 0.1s, color 0.15s;}' +
+    '.et-actions .et-cancel{background:transparent;color:var(--t2);border-color:var(--b);}' +
+    '.et-actions .et-cancel:hover{background:rgba(15,23,42,0.04);color:var(--t1);}' +
+    '.et-actions .et-submit{background:var(--test);color:#fff;}' +
+    '.et-actions .et-submit:hover{background:#4338ca;}' +
+    '.et-actions .et-submit:active{transform:scale(0.97);}' +
+    '.et-actions .et-submit:disabled{opacity:0.85;cursor:wait;}' +
+    '.et-actions .et-submit.success{background:#059669;}' +
+    '.et-actions .et-submit.failed{background:#dc2626;}';
+
+  document.head.appendChild(st);
 }

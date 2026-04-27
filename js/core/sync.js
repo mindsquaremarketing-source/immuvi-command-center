@@ -600,6 +600,27 @@ function importTasksFromClickUp(tasks) {
   initAnglePersonas();
 }
 
+// ClickUp's task description and rich-text custom fields can come back as
+// Quill delta JSON ({"ops":[{"insert":"..."}, ...]}) instead of plain text,
+// depending on how the task was authored. Render the deltas to plain text so
+// downstream code (description slicing, hypothesis label stripping, tracker
+// rendering) sees readable content rather than raw JSON.
+function extractPlainText(val) {
+  if (!val) return '';
+  var s = String(val).trim();
+  if (s.charAt(0) === '{') {
+    try {
+      var delta = JSON.parse(s);
+      if (delta && delta.ops && Array.isArray(delta.ops)) {
+        return delta.ops.map(function(op) {
+          return typeof op.insert === 'string' ? op.insert : '';
+        }).join('').trim();
+      }
+    } catch (e) { /* not JSON, fall through to return raw */ }
+  }
+  return s;
+}
+
 function parseClickUpTask(t) {
   // Map ClickUp task to ADS format.
   // Match custom fields by name (case-insensitive) so no pre-configuration needed.
@@ -765,9 +786,12 @@ function parseClickUpTask(t) {
     }
   })();
 
-  // Creative Hypothesis: stored at start of description before the ━━━ separator
+  // Creative Hypothesis: stored at start of description before the ━━━ separator.
+  // Flatten Quill delta JSON FIRST so the separator slice and the label-strip
+  // regex operate on rendered plain text, not on raw JSON (which would otherwise
+  // get sliced mid-token and produce garbage).
   var creativeHypothesis = '';
-  var desc = t.description || '';
+  var desc = extractPlainText(t.description || '');
   if (desc) {
     var sepIdx = desc.indexOf('━━━');
     if (sepIdx !== -1) {
@@ -837,7 +861,7 @@ function parseClickUpTask(t) {
     creativeStructure: getFieldValue(['creative structure', 'structure', 'creative format', 'format category', 'ad structure']),
     hookType: getFieldValue(['hook type', 'hooktype', 'hook style', 'hook']),
     productionStyle: getFieldValue(['production style', 'productionstyle', 'production type', 'style']),
-    creativeHypothesis: creativeHypothesis || getFieldValue(['creative hypothesis', 'hypothesis']),
+    creativeHypothesis: creativeHypothesis || extractPlainText(getFieldValue(['creative hypothesis', 'hypothesis'])),
     adOrigin: 'ClickUp',
     taskType: isProduction ? 'production' : 'format',
     sourceFormatId: sourceFormatId,

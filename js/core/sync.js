@@ -832,6 +832,7 @@ function parseClickUpTask(t) {
     taskEditor: taskEditor || null
   };
   ad.winnerTier = extractWinnerTier(rawStatus);
+  ad._rawClickupStatus = rawStatus;
 
   // Custom-field tier override — wins over the status-derived tier when present.
   // Looks for a workspace-defined dropdown/text field under any of these names.

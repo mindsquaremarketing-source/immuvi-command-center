@@ -1,4 +1,37 @@
 // ================================================
+// Local Quill-delta flattener — sync.js loads after this file in index.html,
+// so its extractPlainText is not yet defined when renderCreatives runs on
+// initial page load. This self-contained version handles the same shapes
+// (well-formed {ops:[...]}, bare ops array) plus a regex fallback that
+// recovers "insert" strings from truncated/broken Quill JSON.
+// ================================================
+function _flattenQuill(val) {
+  if (!val) return '';
+  var s = String(val).trim();
+  if (s.charAt(0) !== '{' && s.charAt(0) !== '[') return s;
+  try {
+    var parsed = JSON.parse(s);
+    var ops = parsed && parsed.ops ? parsed.ops : (Array.isArray(parsed) ? parsed : null);
+    if (!ops || !ops.length) return s;
+    return ops.map(function(op) {
+      if (op && typeof op.insert === 'string') return op.insert;
+      if (op && op.insert && typeof op.insert === 'object') return ' ';
+      return '';
+    }).join('').trim();
+  } catch (e) {
+    // Truncated / malformed JSON — recover whatever "insert":"..." strings we can.
+    var parts = [];
+    var rx = /"insert"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+    var m;
+    while ((m = rx.exec(s)) !== null) {
+      try { parts.push(JSON.parse('"' + m[1] + '"')); }
+      catch (e2) { parts.push(m[1]); }
+    }
+    return parts.length ? parts.join('').trim() : s;
+  }
+}
+
+// ================================================
 // showUsagePopup — modal showing all cells a creative is used in
 // ================================================
 function showUsagePopup(adId) {
@@ -321,11 +354,9 @@ function renderCreatives() {
 
     // Hypothesis inline textarea — compact, expands on focus.
     // Defensive: stale meta from older syncs may still hold raw Quill delta
-    // JSON. Run extractPlainText (defined in sync.js, globally available at
-    // render time) so the cell always renders human text.
-    var hyp = (typeof extractPlainText === 'function')
-      ? extractPlainText(effectiveHypothesis)
-      : effectiveHypothesis;
+    // JSON. _flattenQuill is defined at the top of this file (no dependency
+    // on sync.js, which loads later in index.html).
+    var hyp = _flattenQuill(effectiveHypothesis);
     var hypHtml = '<div class="hyp-cell">' +
       '<textarea class="hyp-input' + (hyp ? ' hyp-filled' : '') + '" rows="1" ' +
         'placeholder="Add hypothesis…" ' +

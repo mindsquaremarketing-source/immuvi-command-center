@@ -608,12 +608,30 @@ function importTasksFromClickUp(tasks) {
 function extractPlainText(val) {
   if (!val) return '';
   var s = String(val).trim();
+  // Quill delta wrapped in object: {ops: [...]}.
   if (s.charAt(0) === '{') {
     try {
       var delta = JSON.parse(s);
       if (delta && delta.ops && Array.isArray(delta.ops)) {
         return delta.ops.map(function(op) {
-          return typeof op.insert === 'string' ? op.insert : '';
+          if (typeof op.insert === 'string') return op.insert;
+          // Embed objects (image, video, mention, etc.) — replace with a space
+          // so neighboring words don't fuse together but no JSON leaks through.
+          if (op.insert && typeof op.insert === 'object') return ' ';
+          return '';
+        }).join('').trim();
+      }
+    } catch (e) { /* not JSON, fall through to return raw */ }
+  }
+  // Bare ops array: [{insert: "..."}, ...]
+  if (s.charAt(0) === '[') {
+    try {
+      var arr = JSON.parse(s);
+      if (Array.isArray(arr) && arr.length && (typeof arr[0] === 'object')) {
+        return arr.map(function(op) {
+          if (op && typeof op.insert === 'string') return op.insert;
+          if (op && op.insert && typeof op.insert === 'object') return ' ';
+          return '';
         }).join('').trim();
       }
     } catch (e) { /* not JSON, fall through to return raw */ }
@@ -816,6 +834,18 @@ function parseClickUpTask(t) {
       // Only strip if the label is in the first 80 chars (guard against hypothesis text matching)
       return m.length <= 80 ? '' : m;
     }).trim();
+    // Keep only the first meaningful paragraph. ClickUp descriptions often
+    // contain ICP profiles, scripts, etc. after a paragraph break — the
+    // hypothesis cell only wants the lead. Split on the first blank line.
+    var paraSplit = creativeHypothesis.split(/\r?\n\s*\r?\n/);
+    if (paraSplit.length > 1 && paraSplit[0].trim()) {
+      creativeHypothesis = paraSplit[0].trim();
+    }
+    // Hard-limit to 300 chars so a runaway single-paragraph description
+    // doesn't render as a wall of text in the tracker cell.
+    if (creativeHypothesis.length > 300) {
+      creativeHypothesis = creativeHypothesis.slice(0, 297).trim() + '…';
+    }
   }
 
   // Fallback: parse "Angle × Persona" pattern from task name

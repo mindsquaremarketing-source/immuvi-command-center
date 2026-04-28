@@ -319,8 +319,13 @@ function renderCreatives() {
       }
     }
 
-    // Hypothesis inline textarea — compact, expands on focus
-    var hyp = effectiveHypothesis;
+    // Hypothesis inline textarea — compact, expands on focus.
+    // Defensive: stale meta from older syncs may still hold raw Quill delta
+    // JSON. Run extractPlainText (defined in sync.js, globally available at
+    // render time) so the cell always renders human text.
+    var hyp = (typeof extractPlainText === 'function')
+      ? extractPlainText(effectiveHypothesis)
+      : effectiveHypothesis;
     var hypHtml = '<div class="hyp-cell">' +
       '<textarea class="hyp-input' + (hyp ? ' hyp-filled' : '') + '" rows="1" ' +
         'placeholder="Add hypothesis…" ' +

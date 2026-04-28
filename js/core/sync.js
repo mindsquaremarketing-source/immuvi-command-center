@@ -797,9 +797,13 @@ function parseClickUpTask(t) {
     // skill prepends to the task description — that's a doc pointer, not a
     // hypothesis. Without this strip, the pointer line becomes the entire
     // hypothesis (no '━━━' separator means desc.trim() returns it whole).
-    desc = desc.replace(/^\s*[📄]?\s*Creative\s+Brief\s*:\s*\S+\s*[\r\n]+/i, '');
+    // Permissive prefix [^A-Za-z]* eats any emoji / whitespace combo (the 📄
+    // surrogate pair was being mishandled by the prior char-class regex).
+    // (?:[\r\n]+|$) lets the URL be the entire description with no trailing
+    // newline (when existing_desc was empty and .strip() removed the trailing \n).
+    desc = desc.replace(/^[^A-Za-z]*Creative\s+Brief\s*:\s*\S+\s*(?:[\r\n]+|$)/i, '');
     // Also strip a bare-URL first line (some integrations write the URL alone).
-    desc = desc.replace(/^https?:\/\/\S+\s*[\r\n]+/, '');
+    desc = desc.replace(/^https?:\/\/\S+\s*(?:[\r\n]+|$)/, '');
     var sepIdx = desc.indexOf('━━━');
     if (sepIdx !== -1) {
       creativeHypothesis = desc.slice(0, sepIdx).trim();

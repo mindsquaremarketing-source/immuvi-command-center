@@ -61,6 +61,21 @@ var _META_FIELDS = [
   '_classifiedAt', '_classifiedBy'
 ];
 
+// Keys written by the external clickup-creative-pipeline classifier (and the
+// repair SQL). parseClickUpTask doesn't always re-derive these on every sync
+// (e.g. the description-parsed hypothesis returns empty after the doc-URL
+// strip if there's no real hypothesis text). The default _adToRow → upsert
+// path REPLACES the row's meta entirely, so empty-on-sync would wipe a real
+// classifier value. Mirror the saveInspirations server-wins pattern: when
+// the local ad has an empty value for one of these keys, preserve whatever
+// is currently in Supabase.
+var _CLASSIFIER_OWNED_KEYS = [
+  'hookType', 'creativeStructure', 'productionStyle',
+  'creativeModality', 'creativeHypothesis', 'creativeUSP',
+  'notes', '_clickupDocPageUrl', '_clickupDocPageId',
+  '_classifiedAt', '_classifiedBy'
+];
+
 function _adToRow(a, productId) {
   // Persist the ClickUp linkage so future syncs can dedupe.
   // Priority: explicit a.clickupTaskId → a._clickupId → id (if it looks like a task id)
@@ -218,7 +233,9 @@ const DB = {
     // Composite-key table: matrix_cells (product_id, angle_id, persona_id).
     // uuid table with stable blob: manual_actions (we track via ma._dbId).
     const [existingAds, existingAngles, existingPersonas, existingCells] = await Promise.all([
-      SB.from('ads').select('id').eq('product_id', productId),
+      // ads also pulls `meta` so the classifier-owned-keys preserve step below
+      // can keep values that parseClickUpTask returned empty (e.g. hypothesis).
+      SB.from('ads').select('id, meta').eq('product_id', productId),
       SB.from('angles').select('id').eq('product_id', productId),
       SB.from('personas').select('id').eq('product_id', productId),
       SB.from('matrix_cells').select('id, angle_id, persona_id').eq('product_id', productId)
@@ -275,6 +292,26 @@ const DB = {
 
     // ── ADS ──────────────────────────────────────────────────────
     const adRows = (state.ADS || []).map(function (a) { return _adToRow(a, productId); });
+    // Classifier-owned-keys preservation. Build a fast id→existing-meta map
+    // and, for every row we're about to upsert, restore any classifier key
+    // we'd otherwise overwrite with empty/null. Without this, parseClickUpTask
+    // returning '' for creativeHypothesis (after the doc-URL strip) wipes the
+    // classifier-written value on every sync.
+    const existingAdMetaById = {};
+    (existingAds.data || []).forEach(function (r) { existingAdMetaById[r.id] = r.meta || {}; });
+    adRows.forEach(function (row) {
+      const existingMeta = existingAdMetaById[row.id] || {};
+      if (!row.meta) row.meta = {};
+      for (var ki = 0; ki < _CLASSIFIER_OWNED_KEYS.length; ki++) {
+        var ck = _CLASSIFIER_OWNED_KEYS[ki];
+        var newVal = row.meta[ck];
+        var oldVal = existingMeta[ck];
+        if ((newVal === undefined || newVal === null || newVal === '') &&
+            (oldVal !== undefined && oldVal !== null && oldVal !== '')) {
+          row.meta[ck] = oldVal;
+        }
+      }
+    });
     const adIds = new Set(adRows.map(function (r) { return r.id; }));
     const adOrphans = (existingAds.data || []).filter(function (r) { return !adIds.has(r.id); }).map(function (r) { return r.id; });
     if (adOrphans.length) tasks.push(SB.from('ads').delete().in('id', adOrphans));

@@ -160,7 +160,13 @@ const DB = {
 
   async upsertProduct(p) {
     if (!SB || !p || !p.id) return;
+    // Preserve keys this code path doesn't manage (e.g. doc_id written by the
+    // creative-pipeline scripts) — Supabase upsert does a wholesale row replace,
+    // not a JSONB merge, so we fetch + spread the existing config.
+    const { data: existing } = await SB.from('products').select('config').eq('id', p.id).maybeSingle();
+    const existingConfig = (existing && existing.config) || {};
     const config = {
+      ...existingConfig,
       clickup_list_id: p.clickupListId || '',
       clickup_list_name: p.clickupListName || '',
       color: p.color || '',

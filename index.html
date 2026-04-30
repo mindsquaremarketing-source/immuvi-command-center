@@ -33,6 +33,11 @@
         </div>
       </div>
       <div class="hdr-right">
+        <button id="themeToggle" onclick="toggleTheme()"
+          title="Toggle dark/light mode"
+          style="background:none;border:1px solid var(--b);border-radius:var(--rs);padding:6px 10px;cursor:pointer;color:var(--t2);font-size:0.75rem;transition:all .2s">
+          🌙
+        </button>
         <input type="text" class="api-inp" id="apiKeyInput" placeholder="ClickUp API Key" />
         <button class="btn-sync" onclick="syncClickUp()">Sync ClickUp</button>
         <button class="btn-ghost btn-sm" onclick="if(confirm('Reset all data to seed defaults? This cannot be undone.')) resetToSeedData()" title="Clear saved data and reload from defaults" style="font-size:0.65rem;padding:4px 8px;color:var(--t3)">&#8635; Reset</button>

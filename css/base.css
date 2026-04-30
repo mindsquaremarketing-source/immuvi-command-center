@@ -4,48 +4,74 @@
 @import url('https://api.fontsource.org/v1/fonts/satoshi/latin-600-normal.css');
 @import url('https://api.fontsource.org/v1/fonts/satoshi/latin-700-normal.css');
 
-/* ── Dark professional palette (Softnet/accounting-style) ──
-   The structural rules below this block were authored against the
-   light tokens; the dark theme is applied here by reassigning the
-   token values plus a focused override block at the bottom of the
-   file. Anything that already uses var(...) flips automatically. */
+/* ── Light default palette + dark mode toggle ──
+   :root holds the light-mode tokens. [data-theme="dark"] on
+   <html> remaps the surface/border/text tokens to dark
+   without touching the brand/status hues; #toggleTheme in the
+   header flips it via toggleTheme() in js/core/ui.js, persisted
+   in localStorage. */
 :root {
+  /* Backgrounds */
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+  --card2: #F1F5F9;
+  --surface: #F8FAFC;
+  --el: #F1F5F9;
+
+  /* Borders */
+  --b: #E2E8F0;
+  --bh: #CBD5E1;
+
+  /* Text */
+  --t1: #0F172A;
+  --t2: #475569;
+  --t3: #94A3B8;
+
+  /* Brand */
+  --holo: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #06B6D4 100%);
+  --holo90: linear-gradient(90deg, #6366F1, #8B5CF6, #06B6D4);
+  --test: #6366F1;
+  --testb: rgba(99,102,241,0.08);
+  --testbr: rgba(99,102,241,0.22);
+  --win: #059669;
+  --winb: rgba(5,150,105,0.08);
+  --winbr: rgba(5,150,105,0.22);
+  --ready: #D97706;
+  --readyb: rgba(217,119,6,0.08);
+  --readybr: rgba(217,119,6,0.22);
+  --lose: #DC2626;
+  --loseb: rgba(220,38,38,0.08);
+  --losebr: rgba(220,38,38,0.22);
+  --inprog: #2563EB;
+  --inprogb: rgba(37,99,235,0.08);
+  --inprogbr: rgba(37,99,235,0.22);
+  --notstart: #7C3AED;
+  --notstartb: rgba(124,58,237,0.08);
+  --notstartbr: rgba(124,58,237,0.22);
+  --prod: #0891B2;
+  --scale: #10B981;
+  --complete: #059669;
+  --approved: #2563EB;
+  --inprod: #F59E0B;
+
+  /* Radius */
+  --r: 12px;
+  --rs: 8px;
+  --rm: 16px;
+}
+
+/* Dark mode — applied via toggleTheme() setting [data-theme="dark"] on <html> */
+[data-theme="dark"] {
   --bg: #0F1117;
-  --surface: #15171F;
   --card: #1A1D27;
   --card2: #21242F;
+  --surface: #15171F;
   --el: #21242F;
   --b: rgba(255,255,255,0.08);
   --bh: rgba(255,255,255,0.18);
-  --holo: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #06B6D4 100%);
-  --holo90: linear-gradient(90deg, #6366F1, #8B5CF6, #06B6D4);
-  --win: #10B981;
-  --winb: rgba(16,185,129,0.12);
-  --winbr: rgba(16,185,129,0.28);
-  --test: #6366F1;
-  --testb: rgba(99,102,241,0.12);
-  --testbr: rgba(99,102,241,0.30);
-  --lose: #EF4444;
-  --loseb: rgba(239,68,68,0.12);
-  --losebr: rgba(239,68,68,0.30);
-  --ready: #F59E0B;
-  --readyb: rgba(245,158,11,0.12);
-  --readybr: rgba(245,158,11,0.30);
-  --scale: #10B981;
-  --complete: #10B981;
-  --approved: #3B82F6;
-  --inprod: #F59E0B;
-  --inprog: #3B82F6;
-  --inprogb: rgba(59,130,246,0.12);
-  --inprogbr: rgba(59,130,246,0.30);
-  --notstart: #8B5CF6;
-  --notstartb: rgba(139,92,246,0.12);
-  --notstartbr: rgba(139,92,246,0.30);
   --t1: #F1F5F9;
   --t2: #94A3B8;
   --t3: #475569;
-  --r: 12px;
-  --rs: 6px;
 }
 
 @keyframes fadeUp {
@@ -1357,215 +1383,137 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 
 /* ============================================================
-   DARK PROFESSIONAL THEME — structural overrides
-   ============================================================
-   The palette in :root flips most of the UI dark on its own.
-   This block fixes rules that hardcoded light-mode rgbas and
-   adds the spec's structural polish: gradient KPI accents,
-   indigo pill tabs, glowing primary buttons, soft card shadows,
-   pulsing status dot, dark scrim/skeleton/scrollbars.
+   MODERN POLISH — applies in both modes
    ============================================================ */
 
-/* Body — dark base, light dotted texture, soft indigo halo */
-body {
+/* Modern card style — softer corners, layered ambient shadow */
+.cov-card, .winner-card, .prod-card, .next-tests-wrapper,
+.winner-variations-wrapper, .scale-winners-wrapper {
+  border-radius: var(--rm) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06),
+              0 4px 16px rgba(0,0,0,0.04) !important;
+  border: 1px solid var(--b) !important;
+  transition: box-shadow 0.2s, transform 0.2s !important;
+}
+.cov-card:hover, .winner-card:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.1) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Modern KPI strip — gradient top accent */
+.kpi, .kpi-item {
+  border-radius: var(--r) !important;
+  border: 1px solid var(--b) !important;
+  background: var(--card) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+.kpi::before, .kpi-item::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0; left: 0; right: 0 !important;
+  height: 3px !important;
+  background: var(--holo) !important;
+}
+
+/* Modern tabs — pill-top + accent color when active */
+.tab {
+  border-radius: var(--rs) var(--rs) 0 0 !important;
+  transition: all 0.2s !important;
+}
+.tab.on {
+  background: var(--card) !important;
+  color: var(--test) !important;
+  font-weight: 700 !important;
+}
+
+/* Modern sync button — indigo→purple gradient with hover lift */
+.btn-sync {
+  background: linear-gradient(135deg, #6366F1, #8B5CF6) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.3) !important;
+  transition: all 0.2s !important;
+}
+.btn-sync:hover {
+  box-shadow: 0 4px 16px rgba(99,102,241,0.5) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Smooth transitions for theme switching — only the props that flip */
+* {
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s !important;
+}
+
+/* ============================================================
+   DARK-MODE structural overrides
+   ============================================================
+   Surgical fixes for rules in this file that hardcoded
+   light-mode rgba/hex values. Anything already using
+   var(...) flips automatically via the :root token swap. */
+
+/* Body — light dot texture inverts to white-alpha */
+[data-theme="dark"] body {
   background-image: radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px);
 }
-body::before {
+[data-theme="dark"] body::before {
   background: radial-gradient(ellipse at center, rgba(99,102,241,0.12) 0%, transparent 70%);
   opacity: 0.55;
 }
-::selection { background: rgba(99,102,241,0.35); color: #fff; }
+[data-theme="dark"] ::selection { background: rgba(99,102,241,0.35); color: #fff; }
 
-/* Header — translucent dark backdrop blur */
-.hdr { background: rgba(15,17,23,0.82); }
+/* Sticky bars — translucent dark backdrops instead of light rgba */
+[data-theme="dark"] .hdr { background: rgba(15,17,23,0.82); }
+[data-theme="dark"] .tabs-wrap { background: rgba(15,17,23,0.92); }
 
-/* Logo — slightly stronger holo wash on dark for legibility */
-.hdr-logo-name::before { opacity: 0.14; }
+/* Hover/active tints that used dark-on-light rgbas */
+[data-theme="dark"] .tab:hover { background: rgba(255,255,255,0.04); }
+[data-theme="dark"] .dtbl th { background: rgba(255,255,255,0.03); }
+[data-theme="dark"] .dtbl td select:hover { background: rgba(255,255,255,0.04); border-color: var(--b); }
 
-/* API key input — dark elevated surface */
-.api-inp { background: rgba(255,255,255,0.04); }
-.api-inp:focus {
-  border-color: rgba(99,102,241,0.5);
-  box-shadow: 0 0 0 2px rgba(99,102,241,0.14);
-  outline: none;
-}
-
-/* Sync button — gradient fill + indigo glow */
-.btn-sync { box-shadow: 0 4px 14px rgba(99,102,241,0.28); }
-.btn-sync:hover { box-shadow: 0 6px 22px rgba(139,92,246,0.45); }
-
-/* Live sync chip — subtle elevated dark pill */
-.live-sync-bar { background: rgba(255,255,255,0.04); }
-
-/* Status indicator — glowing green when synced */
-.status-dot.ok {
-  box-shadow: 0 0 8px rgba(16,185,129,0.55), 0 0 0 2px rgba(16,185,129,0.15);
-  animation: statusGlow 2.4s ease-in-out infinite;
-}
-@keyframes statusGlow {
-  0%,100% { box-shadow: 0 0 6px rgba(16,185,129,0.45), 0 0 0 2px rgba(16,185,129,0.10); }
-  50%     { box-shadow: 0 0 14px rgba(16,185,129,0.70), 0 0 0 4px rgba(16,185,129,0.05); }
-}
-
-/* Tabs — dark sticky bar + indigo pill highlight for the active tab */
-.tabs-wrap { background: rgba(15,17,23,0.92); }
-.tab:hover { color: var(--t1); background: rgba(255,255,255,0.04); }
-.tab.on {
-  color: var(--t1);
-  background: rgba(99,102,241,0.15);
-  border-radius: var(--rs) var(--rs) 0 0;
-}
-.tab.on::after {
-  background: var(--holo);
-  box-shadow: 0 0 10px rgba(139,92,246,0.55);
-}
-.tab .tab-count { background: rgba(255,255,255,0.06); color: var(--t2); }
-
-/* KPI strip — gradient top accent on every stat + ambient glow on hover */
-.kpi-strip {
-  border: 1px solid var(--b);
-  background: var(--card);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.25);
-}
-.kpi, .kpi-item { transition: background .2s ease; }
-.kpi::after, .kpi-item::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--holo);
-  opacity: 0.5;
-  pointer-events: none;
-}
-.kpi:hover, .kpi-item:hover { background: rgba(99,102,241,0.05); }
-.kpi:hover .kpi-val, .kpi-item:hover .kpi-val { color: var(--test); }
-.kpi-val { font-size: 1.55rem; }
-
-/* Coverage cards — deep ambient shadow + indigo glow on hover */
-.cov-card {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.35);
-}
-.cov-card:hover {
-  box-shadow: 0 6px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.18);
-  transform: translateY(-1px);
-}
-.cov-bar { background: rgba(255,255,255,0.06); }
-
-/* Gap box — dark variant with indigo hover hint */
-.gap-box { box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
-.gap-box:hover { box-shadow: 0 4px 20px rgba(99,102,241,0.20); }
-
-/* Tables — light tint header + indigo row hover */
-.dtbl th { background: rgba(255,255,255,0.03); }
-.dtbl tr:hover td { background: rgba(99,102,241,0.06); }
-.dtbl tr:hover td:first-child { border-left: 2px solid rgba(99,102,241,0.5); }
-.dtbl td select:hover { background: rgba(255,255,255,0.04); }
-.dtbl td input:focus { background: rgba(255,255,255,0.04); }
-
-/* Form inputs — dark elevated surface, indigo focus ring */
-.fi, .fs, .f-inp, .date-inp, .hyp-input.hyp-filled, .fs.fs-dim.fs-filled {
-  background: rgba(255,255,255,0.03);
-}
-.fi:focus, .fs:focus, .f-inp:focus, .date-inp:focus {
-  border-color: rgba(99,102,241,0.5);
-  box-shadow: 0 0 0 2px rgba(99,102,241,0.14);
-}
-.hyp-input:hover, .hyp-input:focus { background: rgba(255,255,255,0.04); }
-.editable-cell:hover { background: rgba(255,255,255,0.04); }
-.editable-cell:focus { background: rgba(99,102,241,0.06); outline: 2px solid rgba(99,102,241,0.35); }
-
-/* Buttons — primary indigo→purple glow, ghost soft dark */
-.btn-add { box-shadow: 0 4px 14px rgba(99,102,241,0.28); }
-.btn-add:hover { box-shadow: 0 6px 22px rgba(139,92,246,0.45); }
-.btn-add:active { box-shadow: 0 2px 8px rgba(99,102,241,0.25); }
-.btn-ghost {
-  background: rgba(255,255,255,0.02);
-  color: var(--t2);
-}
-.btn-ghost:hover { background: rgba(255,255,255,0.05); color: var(--t1); }
-.btn-icon { background: rgba(255,255,255,0.02); }
-.btn-icon:hover { background: rgba(255,255,255,0.06); }
-
-/* Cards reused throughout — soft border + ambient shadow */
-.kpi-strip,
-.cov-card,
-.winner-card,
-.action-toolbar,
-.summary-item,
-.var-builder,
-.chip-palette,
-.chip {
-  border: 1px solid var(--b);
-}
-.winner-card { box-shadow: 0 4px 18px rgba(0,0,0,0.32); }
-.winner-card:hover {
-  border-color: var(--bh);
-  box-shadow: 0 6px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(99,102,241,0.15);
-}
-.chip { background: rgba(255,255,255,0.03); }
-.chip:hover { background: rgba(255,255,255,0.06); }
-
-/* Production board — dark column with hatch on empty + soft card shadow */
-.prod-col { background: rgba(255,255,255,0.02); }
-.prod-card { box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-.prod-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.5); border-color: var(--bh); }
-.prod-card.drag-lifting { box-shadow: 0 14px 36px rgba(0,0,0,0.6); }
-.prod-empty {
-  background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px);
-  border-color: rgba(255,255,255,0.05);
-}
-
-/* Action items — indigo hover wash */
-.ai:hover { background: rgba(99,102,241,0.05); }
-.ai:has(.ai-pip.urgent) { background: rgba(239,68,68,0.04); }
-.ai:has(.ai-pip.urgent):hover { background: rgba(239,68,68,0.08); }
-
-/* Modal — dark card with deeper lift + indigo hairline */
-.modal {
-  background: var(--card);
-  border: 1px solid var(--b);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.14);
-}
-.modal-overlay { background: rgba(0,0,0,0.65); }
-.modal-close:hover { background: rgba(255,255,255,0.06); }
-
-/* Toast — dark card with status accent border (was using --t1 which is now light) */
-.toast {
+/* Toast — original sets background:var(--t1); --t1 is light in dark mode → invisible */
+[data-theme="dark"] .toast {
   background: var(--card);
   color: var(--t1);
   border: 1px solid var(--b);
   box-shadow: 0 8px 28px rgba(0,0,0,0.5);
 }
 
-/* Loading overlay — dark scrim + indigo spinner */
-.loading-overlay {
+/* Loading scrim was light rgba — switch to dark */
+[data-theme="dark"] .loading-overlay {
   background: rgba(15,17,23,0.82);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
-.loading-spinner {
-  border: 3px solid var(--b);
-  border-top-color: var(--test);
-}
 
-/* Skeleton shimmer — dark base, light highlight */
-.skeleton {
+/* Skeleton highlight was hardcoded #fff — soften on dark */
+[data-theme="dark"] .skeleton {
   background: linear-gradient(90deg, var(--el) 25%, rgba(255,255,255,0.06) 50%, var(--el) 75%);
 }
 
-/* Scrollbars — light alpha thumb on dark track */
-::-webkit-scrollbar-track { background: rgba(0,0,0,0.25); }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
-.kpi-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+/* Scrollbars — light track/thumb invert to white-alpha */
+[data-theme="dark"] ::-webkit-scrollbar-track { background: rgba(0,0,0,0.25); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
 
-/* Action group header — match dark elevation */
-.action-group-title { background: rgba(255,255,255,0.03); }
-.action-group-count { background: rgba(255,255,255,0.06); color: var(--t2); }
+/* Production empty state hatch — dark variant */
+[data-theme="dark"] .prod-empty {
+  background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px);
+  border-color: rgba(255,255,255,0.05);
+}
 
-/* Var builder dashed border — bump contrast on dark */
-.var-builder { border: 2px dashed rgba(255,255,255,0.10); }
-.drop-slot { border: 2px dashed rgba(255,255,255,0.10); }
+/* Action group header tint */
+[data-theme="dark"] .action-group-title { background: rgba(255,255,255,0.03); }
+[data-theme="dark"] .action-group-count { background: rgba(255,255,255,0.06); color: var(--t2); }
 
-/* Empty / muted states still readable on dark */
-.gap-list li::before { background: rgba(255,255,255,0.25); }
+/* Modal scrim — deeper on dark for contrast */
+[data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.65); }
+[data-theme="dark"] .modal {
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.14);
+}
+
+/* Theme toggle button — color follows --t2 in both modes */
+#themeToggle:hover {
+  border-color: var(--bh);
+  color: var(--t1);
+  background: var(--el);
+}

@@ -1,7 +1,7 @@
 // ================================================
-// Interactive Creative Matrix — Angle × Persona grid
-// with per-funnel coverage dots and right-side drill panel.
-// Reads from the global ADS array; row/col existence is
+// Interactive Creative Matrix — Angle cards with
+// persona pills carrying TOF/MOF/BOF coverage dots.
+// Reads from the global ADS array; rows/pills are
 // driven by ads with both angle AND persona filled in.
 // ================================================
 
@@ -32,8 +32,8 @@ function initAnglePersonas() {
 
 // ================================================
 // renderMatrixStyle — inject scoped CSS into <head> once.
-// All rules sit under #matrixGrid so the legacy matrix.css
-// rules can't bleed in and dot-grid styles can't bleed out.
+// Rules sit under #matrixGrid so the legacy matrix.css
+// rules can't bleed in and these styles can't bleed out.
 // ================================================
 function renderMatrixStyle() {
   if (_mxStyleInjected) return;
@@ -56,31 +56,34 @@ function renderMatrixStyle() {
     '#matrixGrid .mx-stat-num.part{color:var(--ready)}' +
     '#matrixGrid .mx-stat-num.gap{color:var(--t3)}' +
     '#matrixGrid .mx-stat-lbl{font-size:0.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.04em}' +
-    '#matrixGrid .mx-grid-wrap{background:var(--card);border:1px solid var(--b);border-radius:var(--r);padding:0;overflow:auto;box-shadow:0 1px 3px rgba(15,23,42,0.04)}' +
-    '#matrixGrid .mx-table{display:grid;gap:0;min-width:100%}' +
-    '#matrixGrid .mx-corner,#matrixGrid .mx-ch,#matrixGrid .mx-rh,#matrixGrid .mx-gcell{border-bottom:1px solid var(--b);border-right:1px solid var(--b);padding:8px 10px;background:var(--card)}' +
-    '#matrixGrid .mx-corner{background:rgba(0,0,0,0.02);position:sticky;top:0;left:0;z-index:3;font-size:0.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.04em;font-weight:600}' +
-    '#matrixGrid .mx-ch{position:sticky;top:0;z-index:2;background:rgba(0,0,0,0.02);font-weight:600;color:var(--t1);writing-mode:vertical-rl;transform:rotate(180deg);height:100px;white-space:nowrap;font-size:0.65rem;padding:8px 6px;display:flex;align-items:flex-start;overflow:hidden}' +
-    '#matrixGrid .mx-ch-win{font-family:"JetBrains Mono",monospace;font-size:0.6rem;color:var(--win);margin-left:6px;font-weight:700}' +
     '#matrixGrid .mx-legend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:0.68rem;color:var(--t2);padding:8px 14px;background:var(--card);border:1px solid var(--b);border-radius:var(--r)}' +
     '#matrixGrid .mx-legend-item{display:flex;align-items:center;gap:5px}' +
     '#matrixGrid .mx-legend-sep{color:var(--b);font-size:1rem}' +
     '#matrixGrid .mx-legend b{color:var(--t1)}' +
-    '#matrixGrid .mx-rh{position:sticky;left:0;z-index:1;background:var(--card);font-size:0.72rem;font-weight:600;color:var(--t1);white-space:nowrap;display:flex;align-items:center;gap:6px}' +
-    '#matrixGrid .mx-rh-win{font-family:"JetBrains Mono",monospace;font-size:0.6rem;color:var(--win);font-weight:700}' +
-    '#matrixGrid .mx-gcell{cursor:pointer;transition:background .12s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:88px;min-height:54px;position:relative}' +
-    '#matrixGrid .mx-gcell:hover{background:rgba(37,99,235,0.05)}' +
-    '#matrixGrid .mx-gcell.selected{background:rgba(37,99,235,0.08);box-shadow:inset 0 0 0 2px var(--test)}' +
-    '#matrixGrid .mx-gcell.dim{opacity:0.28}' +
-    '#matrixGrid .mx-dots{display:flex;gap:5px;align-items:center}' +
-    '#matrixGrid .mx-dot{width:10px;height:10px;border-radius:50%;background:#cbd5e1;display:inline-block;position:relative}' +
-    '#matrixGrid .mx-dot.win{background:var(--win);box-shadow:0 0 0 2px rgba(5,150,105,0.18)}' +
-    '#matrixGrid .mx-dot.test{background:var(--test);box-shadow:0 0 0 2px rgba(79,70,229,0.18)}' +
-    '#matrixGrid .mx-dot.ready{background:var(--ready);box-shadow:0 0 0 2px rgba(217,119,6,0.18)}' +
+    /* ── Cards layout ── */
+    '#matrixGrid .mx-cards{display:flex;flex-direction:column;gap:12px}' +
+    '#matrixGrid .mx-no-results{padding:32px 16px;text-align:center;color:var(--t3);font-size:0.78rem;background:var(--card);border:1px dashed var(--b);border-radius:var(--r)}' +
+    '#matrixGrid .mx-angle-card{background:var(--card);border:1px solid var(--b);border-radius:var(--r);padding:12px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 3px rgba(15,23,42,0.04)}' +
+    '#matrixGrid .mx-angle-header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}' +
+    '#matrixGrid .mx-angle-name{font-size:0.82rem;font-weight:700;color:var(--t1)}' +
+    '#matrixGrid .mx-angle-count{font-size:0.65rem;color:var(--t3);font-family:"JetBrains Mono",monospace}' +
+    '#matrixGrid .mx-angle-count b{color:var(--win);font-weight:700}' +
+    '#matrixGrid .mx-angle-empty{font-size:0.7rem;color:var(--t3);font-style:italic;padding:4px 0}' +
+    '#matrixGrid .mx-persona-row{display:flex;flex-wrap:wrap;gap:8px}' +
+    '#matrixGrid .mx-persona-pill{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 14px;background:rgba(0,0,0,0.02);border:1px solid var(--b);border-radius:var(--r);cursor:pointer;transition:all .15s;min-width:120px;max-width:180px}' +
+    '#matrixGrid .mx-persona-pill:hover{background:rgba(37,99,235,0.05);border-color:var(--test)}' +
+    '#matrixGrid .mx-persona-pill.selected{background:rgba(37,99,235,0.08);border-color:var(--test);box-shadow:0 0 0 2px rgba(37,99,235,0.15)}' +
+    '#matrixGrid .mx-persona-name{font-size:0.7rem;font-weight:600;color:var(--t1);text-align:center;line-height:1.3;word-break:break-word}' +
+    '#matrixGrid .mx-persona-name .pn-win{display:inline-block;margin-left:4px;font-family:"JetBrains Mono",monospace;font-size:0.6rem;color:var(--win);font-weight:700}' +
+    '#matrixGrid .mx-dots{display:flex;gap:6px;align-items:center}' +
+    '#matrixGrid .mx-dot{width:12px;height:12px;border-radius:50%;background:#cbd5e1;display:inline-block}' +
+    '#matrixGrid .mx-dot.win{background:var(--win)}' +
+    '#matrixGrid .mx-dot.test{background:var(--test)}' +
+    '#matrixGrid .mx-dot.ready{background:var(--ready)}' +
     '#matrixGrid .mx-dot.empty{background:#cbd5e1}' +
-    '#matrixGrid .mx-dot.hl{transform:scale(1.45)}' +
+    '#matrixGrid .mx-dot.hl{transform:scale(1.4)}' +
     '#matrixGrid .mx-dot.fade{opacity:0.25}' +
-    '#matrixGrid .mx-dot-lbl{font-size:0.55rem;color:var(--t3);font-family:"JetBrains Mono",monospace;letter-spacing:0.04em}' +
+    '#matrixGrid .mx-dot-labels{font-size:0.55rem;color:var(--t3);font-family:"JetBrains Mono",monospace;letter-spacing:0.1em}' +
     '#matrixGrid .mx-empty{background:var(--card);border:1px dashed var(--b);border-radius:var(--r);padding:48px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}' +
     '#matrixGrid .mx-empty-icon{font-size:1.8rem;color:var(--t3)}' +
     '#matrixGrid .mx-empty-title{font-size:0.95rem;font-weight:600;color:var(--t1)}' +
@@ -265,35 +268,32 @@ function renderMatrix() {
     return;
   }
 
-  // ── Apply search to row/col visibility ──
+  // ── Apply search to angle/persona visibility ──
   var q = (_mxSearch || '').toLowerCase().trim();
   var anglesVis   = model.angles.slice();
   var personasVis = model.personas.slice();
   if (q) {
     var aMatch = model.angles.filter(function (a) { return a.toLowerCase().indexOf(q) !== -1; });
     var pMatch = model.personas.filter(function (p) { return p.toLowerCase().indexOf(q) !== -1; });
-    // If the search matches angle names, restrict rows; same for personas.
+    // If the search matches angle names, restrict cards; same for personas.
     // If neither axis matches, fall through and show everything (the user
-    // gets a no-result feel via the empty grid rather than a hidden state).
+    // gets a no-result feel via the empty body rather than a hidden state).
     if (aMatch.length || pMatch.length) {
       if (aMatch.length) anglesVis   = aMatch;
       if (pMatch.length) personasVis = pMatch;
     }
   }
 
-  // ── Apply status filter to row/col visibility ──
+  // ── Apply status filter to angle visibility ──
+  // Hide an angle entirely only when none of its (search-visible) personas
+  // would render a pill under the active filter. Per-pill filtering happens
+  // inside renderAngleCard so we can also show the "no personas" empty state.
   if (_mxStatusFilter !== 'all') {
-    var keepAngle = {}, keepPersona = {};
-    anglesVis.forEach(function (a) {
-      personasVis.forEach(function (p) {
-        if (mxCellMatchesStatus(model.cells[a + '||' + p])) {
-          keepAngle[a] = true;
-          keepPersona[p] = true;
-        }
+    anglesVis = anglesVis.filter(function (a) {
+      return personasVis.some(function (p) {
+        return mxCellMatchesStatus(model.cells[a + '||' + p]);
       });
     });
-    anglesVis   = anglesVis.filter(function (a) { return keepAngle[a]; });
-    personasVis = personasVis.filter(function (p) { return keepPersona[p]; });
   }
 
   // ── Stats: computed across the full model, not the filtered view ──
@@ -330,14 +330,6 @@ function renderMatrix() {
     '" oninput="mxSetSearch(this.value)">';
   html += '</div>';
 
-  // Stats bar
-  html += '<div class="mx-stats">' +
-    '<div class="mx-stat"><span class="mx-stat-num">' + totalCombos + '</span><span class="mx-stat-lbl">Total combinations</span></div>' +
-    '<div class="mx-stat"><span class="mx-stat-num full">' + fullCovered + '</span><span class="mx-stat-lbl">Fully covered</span></div>' +
-    '<div class="mx-stat"><span class="mx-stat-num part">' + partialCovered + '</span><span class="mx-stat-lbl">Partially covered</span></div>' +
-    '<div class="mx-stat"><span class="mx-stat-num gap">' + gapCells + '</span><span class="mx-stat-lbl">Not started</span></div>' +
-    '</div>';
-
   // Legend bar — color key + T/M/B funnel abbreviation map
   html += '<div class="mx-legend">' +
     '<span class="mx-legend-item"><span class="mx-dot win"></span> Winner/Scale</span>' +
@@ -350,36 +342,16 @@ function renderMatrix() {
     '<span class="mx-legend-item"><b>B</b> = Bottom of Funnel</span>' +
     '</div>';
 
-  // Grid
-  html += '<div class="mx-grid-wrap">';
-  if (anglesVis.length === 0 || personasVis.length === 0) {
-    html += '<div style="padding:32px 16px;text-align:center;color:var(--t3);font-size:0.78rem">No combinations match the current filters.</div>';
-  } else {
-    var gridCols = '160px repeat(' + personasVis.length + ', 110px)';
-    html += '<div class="mx-table" style="grid-template-columns:' + gridCols + '">';
+  // Stats bar
+  html += '<div class="mx-stats">' +
+    '<div class="mx-stat"><span class="mx-stat-num">' + totalCombos + '</span><span class="mx-stat-lbl">Total combinations</span></div>' +
+    '<div class="mx-stat"><span class="mx-stat-num full">' + fullCovered + '</span><span class="mx-stat-lbl">Fully covered</span></div>' +
+    '<div class="mx-stat"><span class="mx-stat-num part">' + partialCovered + '</span><span class="mx-stat-lbl">Partially covered</span></div>' +
+    '<div class="mx-stat"><span class="mx-stat-num gap">' + gapCells + '</span><span class="mx-stat-lbl">Not started</span></div>' +
+    '</div>';
 
-    // Header row: corner + persona headers (rotated, name truncated to 15 chars,
-    // full name shown on hover via title attr)
-    html += '<div class="mx-corner">Angle \\ Persona</div>';
-    personasVis.forEach(function (p) {
-      var pw = (model.persWin[p] && model.persWin[p].winners) || 0;
-      var pTrunc = p.length > 15 ? p.substring(0, 15) + '…' : p;
-      html += '<div class="mx-ch" title="' + escAttr(p) + '">' + esc(pTrunc) +
-        (pw ? '<span class="mx-ch-win">' + pw + 'W</span>' : '') + '</div>';
-    });
-
-    // Body rows
-    anglesVis.forEach(function (a) {
-      var aw = (model.angleWin[a] && model.angleWin[a].winners) || 0;
-      html += '<div class="mx-rh">' + esc(a) + (aw ? '<span class="mx-rh-win">' + aw + 'W</span>' : '') + '</div>';
-      personasVis.forEach(function (p) {
-        html += renderMatrixCell(a, p, model.cells[a + '||' + p]);
-      });
-    });
-
-    html += '</div>'; // .mx-table
-  }
-  html += '</div>'; // .mx-grid-wrap
+  // Cards (one per angle)
+  html += renderMatrixCards(model, anglesVis, personasVis);
 
   html += '</div>'; // .mx-board
 
@@ -396,19 +368,73 @@ function renderMatrix() {
 }
 
 // ================================================
-// renderMatrixCell — one grid cell with 3 funnel dots.
+// renderMatrixCards — angle-card list. One card per visible
+// angle, each holding a row of persona pills.
 // ================================================
-function renderMatrixCell(angleName, personaName, cell) {
+function renderMatrixCards(model, anglesVis, personasVis) {
+  if (anglesVis.length === 0 || personasVis.length === 0) {
+    return '<div class="mx-no-results">No combinations match the current filters.</div>';
+  }
+  var html = '<div class="mx-cards">';
+  anglesVis.forEach(function (a) {
+    html += renderAngleCard(a, personasVis, model);
+  });
+  html += '</div>';
+  return html;
+}
+
+// ================================================
+// renderAngleCard — one angle's card with header + persona pills.
+// Pills hidden by the status filter are dropped from this card;
+// if none remain, an empty state is shown inside the card.
+// ================================================
+function renderAngleCard(angleName, personasVis, model) {
+  var visiblePersonas = personasVis.filter(function (p) {
+    return mxCellMatchesStatus(model.cells[angleName + '||' + p]);
+  });
+
+  var aw = (model.angleWin[angleName] && model.angleWin[angleName].winners) || 0;
+  var pCount = visiblePersonas.length;
+  var pLbl = pCount + ' persona' + (pCount === 1 ? '' : 's');
+  var wLbl = aw > 0 ? ' · <b>' + aw + ' winner' + (aw === 1 ? '' : 's') + '</b>' : '';
+
+  var html = '<div class="mx-angle-card">';
+  html += '<div class="mx-angle-header">';
+  html += '<span class="mx-angle-name">' + esc(angleName) + '</span>';
+  html += '<span class="mx-angle-count">' + pLbl + wLbl + '</span>';
+  html += '</div>';
+
+  if (visiblePersonas.length === 0) {
+    html += '<div class="mx-angle-empty">No personas with this filter</div>';
+  } else {
+    html += '<div class="mx-persona-row">';
+    visiblePersonas.forEach(function (p) {
+      html += renderPersonaPill(angleName, p, model.cells[angleName + '||' + p], model);
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+// ================================================
+// renderPersonaPill — one persona pill: name + 3 dots + T·M·B labels.
+// Clicking opens the right-side drill-down panel for the cell.
+// ================================================
+function renderPersonaPill(angleName, personaName, cell, model) {
   var key = angleName + '||' + personaName;
+  var isSelected = (_mxSelectedKey === key);
   var stages = ['TOF', 'MOF', 'BOF'];
+  var pw = (model.persWin[personaName] && model.persWin[personaName].winners) || 0;
 
-  var matchesStatus = mxCellMatchesStatus(cell);
-  var isSelected   = (_mxSelectedKey === key);
-  var dim = !matchesStatus;
+  var html = '<div class="mx-persona-pill' + (isSelected ? ' selected' : '') +
+    '" onclick="mxOpenCell(\'' + escJs(angleName) + '\',\'' + escJs(personaName) + '\')" title="' +
+    escAttr(angleName) + ' × ' + escAttr(personaName) + '">';
 
-  var cls = 'mx-gcell' + (isSelected ? ' selected' : '') + (dim ? ' dim' : '');
+  html += '<span class="mx-persona-name">' + esc(personaName) +
+    (pw > 0 ? '<span class="pn-win">' + pw + 'W</span>' : '') + '</span>';
 
-  var html = '<div class="' + cls + '" onclick="mxOpenCell(\'' + escJs(angleName) + '\',\'' + escJs(personaName) + '\')" title="' + escAttr(angleName) + ' × ' + escAttr(personaName) + '">';
   html += '<div class="mx-dots">';
   for (var i = 0; i < 3; i++) {
     var fn = stages[i];
@@ -417,10 +443,13 @@ function renderMatrixCell(angleName, personaName, cell) {
     if (_mxFunnelFilter !== 'ALL') {
       dCls += (fn === _mxFunnelFilter) ? ' hl' : ' fade';
     }
-    html += '<span class="' + dCls + '" title="' + fn + ': ' + (cell && cell[fn].length ? cell[fn].length + ' ad' + (cell[fn].length > 1 ? 's' : '') : 'no ads') + '"></span>';
+    var fnAds = (cell && cell[fn]) ? cell[fn].length : 0;
+    var titleTxt = fn + ': ' + (fnAds ? fnAds + ' ad' + (fnAds > 1 ? 's' : '') + ' (' + st + ')' : 'No ads');
+    html += '<span class="' + dCls + '" title="' + escAttr(titleTxt) + '"></span>';
   }
   html += '</div>';
-  html += '<div class="mx-dot-lbl">T &nbsp;M &nbsp;B</div>';
+
+  html += '<span class="mx-dot-labels">T &middot; M &middot; B</span>';
   html += '</div>';
   return html;
 }

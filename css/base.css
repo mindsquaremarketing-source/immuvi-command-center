@@ -1351,14 +1351,14 @@ body::before{display:none!important}
 .kpi-strip{display:flex!important;gap:14px!important;padding:20px 32px!important}
 .kpi-item{background:#fff!important;border:1px solid var(--b)!important;border-radius:16px!important;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 12px rgba(0,0,0,0.04)!important;padding:18px 18px 14px 22px!important;flex:1!important;position:relative!important;overflow:hidden!important;transition:box-shadow 0.2s,transform 0.2s!important;min-width:0!important}
 .kpi-item:hover{box-shadow:0 6px 20px rgba(0,0,0,0.1)!important;transform:translateY(-2px)!important}
-.kpi-item:nth-child(1){border-left:4px solid #6366F1!important}
-.kpi-item:nth-child(2){border-left:4px solid #10B981!important}
-.kpi-item:nth-child(3){border-left:4px solid #6366F1!important}
-.kpi-item:nth-child(4){border-left:4px solid #F59E0B!important}
-.kpi-item:nth-child(5){border-left:4px solid #8B5CF6!important}
-.kpi-item:nth-child(6){border-left:4px solid #0EA5E9!important}
-.kpi-item:nth-child(7){border-left:4px solid #EC4899!important}
-.kpi-item:nth-child(8){border-left:4px solid #14B8A6!important}
+[data-kpi-index="0"] { border-left: 4px solid #6366F1 !important; }
+[data-kpi-index="1"] { border-left: 4px solid #10B981 !important; }
+[data-kpi-index="2"] { border-left: 4px solid #6366F1 !important; }
+[data-kpi-index="3"] { border-left: 4px solid #F59E0B !important; }
+[data-kpi-index="4"] { border-left: 4px solid #8B5CF6 !important; }
+[data-kpi-index="5"] { border-left: 4px solid #0EA5E9 !important; }
+[data-kpi-index="6"] { border-left: 4px solid #EC4899 !important; }
+[data-kpi-index="7"] { border-left: 4px solid #14B8A6 !important; }
 .kpi-val{font-size:2rem!important;font-weight:800!important;letter-spacing:-0.03em!important;line-height:1!important;margin-bottom:6px!important}
 .kpi-lbl{font-size:0.62rem!important;font-weight:600!important;text-transform:uppercase!important;letter-spacing:0.1em!important;color:#9CA3AF!important}
 .cov-card,.prod-card,.winner-card,.next-tests-wrapper,.winner-variations-wrapper,.scale-winners-wrapper,.ci-wrapper,#gapBox,#scaleWinnersBox,#winnerVariationsBox,#competitorIntelBox{background:#fff!important;border:1px solid var(--b)!important;border-radius:16px!important;box-shadow:0 1px 3px rgba(0,0,0,0.06)!important;transition:box-shadow 0.2s,transform 0.2s!important}
@@ -1370,8 +1370,3 @@ input:focus,select:focus{border-color:#4F46E5!important;box-shadow:0 0 0 3px rgb
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:2px}
 #themeToggle{display:none!important}
-
-/* Fix first KPI card accent + ensure all nth-child borders work */
-.kpi-item:first-child,
-.kpi-item:nth-child(1) { border-left: 4px solid #6366F1 !important; }
-.kpi-first { border-left: 4px solid #6366F1 !important; }

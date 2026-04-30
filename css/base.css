@@ -1374,3 +1374,4 @@ input:focus,select:focus{border-color:#4F46E5!important;box-shadow:0 0 0 3px rgb
 /* Fix first KPI card accent + ensure all nth-child borders work */
 .kpi-item:first-child,
 .kpi-item:nth-child(1) { border-left: 4px solid #6366F1 !important; }
+.kpi-first { border-left: 4px solid #6366F1 !important; }

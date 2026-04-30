@@ -465,8 +465,9 @@ function toggleTheme() {
 }
 
 function initTheme() {
+  // Clear any saved dark theme — default to light
   var saved = 'light';
-  try { saved = localStorage.getItem('theme') || 'light'; } catch (e) {}
+  try { localStorage.setItem('theme', 'light'); } catch (e) {}
   document.documentElement.setAttribute('data-theme', saved);
   var btn = document.getElementById('themeToggle');
   if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';

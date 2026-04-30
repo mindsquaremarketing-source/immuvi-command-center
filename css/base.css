@@ -4,74 +4,88 @@
 @import url('https://api.fontsource.org/v1/fonts/satoshi/latin-600-normal.css');
 @import url('https://api.fontsource.org/v1/fonts/satoshi/latin-700-normal.css');
 
-/* ── Light default palette + dark mode toggle ──
+/* ── Modern SaaS palette — clean light default + dark toggle ──
    :root holds the light-mode tokens. [data-theme="dark"] on
-   <html> remaps the surface/border/text tokens to dark
-   without touching the brand/status hues; #toggleTheme in the
-   header flips it via toggleTheme() in js/core/ui.js, persisted
-   in localStorage. */
+   <html> remaps surface/border/text/shadow tokens to dark.
+   Alpha-pair tokens (--winb / --winbr / etc.) are kept below
+   the spec block because existing badge rules in this file
+   depend on them — dropping them would strip badge tints. */
 :root {
-  /* Backgrounds */
-  --bg: #F8FAFC;
+  /* Core surfaces */
+  --bg: #F0F2F5;
   --card: #FFFFFF;
-  --card2: #F1F5F9;
-  --surface: #F8FAFC;
+  --card2: #F8FAFC;
+  --surface: #FFFFFF;
   --el: #F1F5F9;
 
   /* Borders */
-  --b: #E2E8F0;
+  --b: #E8ECF0;
   --bh: #CBD5E1;
 
-  /* Text */
-  --t1: #0F172A;
-  --t2: #475569;
-  --t3: #94A3B8;
+  /* Typography */
+  --t1: #111827;
+  --t2: #6B7280;
+  --t3: #9CA3AF;
 
-  /* Brand */
+  /* Brand accent */
+  --accent: #6366F1;
+  --accent2: #8B5CF6;
   --holo: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #06B6D4 100%);
   --holo90: linear-gradient(90deg, #6366F1, #8B5CF6, #06B6D4);
+
+  /* Status colors */
+  --win: #059669;
   --test: #6366F1;
+  --ready: #D97706;
+  --lose: #DC2626;
+  --inprog: #2563EB;
+  --notstart: #7C3AED;
+  --prod: #0891B2;
+  --scale: #059669;
+
+  /* Radius */
+  --r: 16px;
+  --rs: 10px;
+  --rm: 20px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+
+  /* ── Status alpha-pair tokens (kept for legacy badge rules) ── */
   --testb: rgba(99,102,241,0.08);
   --testbr: rgba(99,102,241,0.22);
-  --win: #059669;
   --winb: rgba(5,150,105,0.08);
   --winbr: rgba(5,150,105,0.22);
-  --ready: #D97706;
   --readyb: rgba(217,119,6,0.08);
   --readybr: rgba(217,119,6,0.22);
-  --lose: #DC2626;
   --loseb: rgba(220,38,38,0.08);
   --losebr: rgba(220,38,38,0.22);
-  --inprog: #2563EB;
   --inprogb: rgba(37,99,235,0.08);
   --inprogbr: rgba(37,99,235,0.22);
-  --notstart: #7C3AED;
   --notstartb: rgba(124,58,237,0.08);
   --notstartbr: rgba(124,58,237,0.22);
-  --prod: #0891B2;
-  --scale: #10B981;
   --complete: #059669;
   --approved: #2563EB;
   --inprod: #F59E0B;
-
-  /* Radius */
-  --r: 12px;
-  --rs: 8px;
-  --rm: 16px;
 }
 
 /* Dark mode — applied via toggleTheme() setting [data-theme="dark"] on <html> */
 [data-theme="dark"] {
-  --bg: #0F1117;
-  --card: #1A1D27;
-  --card2: #21242F;
-  --surface: #15171F;
-  --el: #21242F;
-  --b: rgba(255,255,255,0.08);
-  --bh: rgba(255,255,255,0.18);
-  --t1: #F1F5F9;
-  --t2: #94A3B8;
-  --t3: #475569;
+  --bg: #0D0F18;
+  --card: #161929;
+  --card2: #1E2235;
+  --surface: #161929;
+  --el: #1E2235;
+  --b: rgba(255,255,255,0.07);
+  --bh: rgba(255,255,255,0.15);
+  --t1: #F9FAFB;
+  --t2: #9CA3AF;
+  --t3: #4B5563;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
 }
 
 @keyframes fadeUp {
@@ -1382,32 +1396,124 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .winner-sub { font-size: 0.75rem; color: var(--t2); margin-top: 2px; }
 
 
-/* ============================================================
-   MODERN POLISH — applies in both modes
-   ============================================================ */
+/* ========================================
+   MODERN UI OVERHAUL — 2025 SaaS Style
+   ======================================== */
 
-/* Modern card style — softer corners, layered ambient shadow */
-.cov-card, .winner-card, .prod-card, .next-tests-wrapper,
-.winner-variations-wrapper, .scale-winners-wrapper {
-  border-radius: var(--rm) !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06),
-              0 4px 16px rgba(0,0,0,0.04) !important;
+/* Body */
+body {
+  background: var(--bg) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont,
+               'Segoe UI', sans-serif !important;
+}
+
+/* Header */
+.hdr {
+  background: var(--card) !important;
+  border-bottom: 1px solid var(--b) !important;
+  box-shadow: var(--shadow-sm) !important;
+  padding: 0 24px !important;
+  height: 60px !important;
+  display: flex !important;
+  align-items: center !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.logo-name {
+  font-size: 1.1rem !important;
+  font-weight: 800 !important;
+  background: var(--holo) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* Navigation tabs */
+.tabs-wrap {
+  background: var(--card) !important;
+  border-bottom: 1px solid var(--b) !important;
+  padding: 0 24px !important;
+  display: flex !important;
+  gap: 2px !important;
+}
+
+.tab {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  padding: 14px 18px !important;
+  color: var(--t2) !important;
+  border: none !important;
+  background: transparent !important;
+  cursor: pointer !important;
+  position: relative !important;
+  transition: color 0.2s !important;
+  white-space: nowrap !important;
+}
+
+.tab:hover {
+  color: var(--t1) !important;
+}
+
+.tab.on {
+  color: var(--accent) !important;
+  font-weight: 700 !important;
+}
+
+.tab.on::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 2px !important;
+  background: var(--holo) !important;
+  border-radius: 2px 2px 0 0 !important;
+}
+
+/* Main content area */
+.main-content, #mainContent, .tab-panel {
+  padding: 24px !important;
+  max-width: 1600px !important;
+}
+
+/* Cards */
+.cov-card, .prod-card, .winner-card,
+.next-tests-wrapper, .winner-variations-wrapper,
+.scale-winners-wrapper, .ci-wrapper {
+  background: var(--card) !important;
   border: 1px solid var(--b) !important;
+  border-radius: var(--r) !important;
+  box-shadow: var(--shadow-sm) !important;
   transition: box-shadow 0.2s, transform 0.2s !important;
 }
+
 .cov-card:hover, .winner-card:hover {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.1) !important;
-  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-2px) !important;
 }
 
-/* Modern KPI strip — gradient top accent */
+/* KPI strip */
+.kpi-strip {
+  display: flex !important;
+  gap: 16px !important;
+  margin-bottom: 24px !important;
+}
+
 .kpi, .kpi-item {
-  border-radius: var(--r) !important;
-  border: 1px solid var(--b) !important;
   background: var(--card) !important;
+  border: 1px solid var(--b) !important;
+  border-radius: var(--r) !important;
+  box-shadow: var(--shadow-sm) !important;
+  padding: 20px 24px !important;
+  flex: 1 !important;
   position: relative !important;
   overflow: hidden !important;
+  transition: box-shadow 0.2s !important;
 }
+
 .kpi::before, .kpi-item::before {
   content: '' !important;
   position: absolute !important;
@@ -1416,104 +1522,145 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   background: var(--holo) !important;
 }
 
-/* Modern tabs — pill-top + accent color when active */
-.tab {
-  border-radius: var(--rs) var(--rs) 0 0 !important;
-  transition: all 0.2s !important;
-}
-.tab.on {
-  background: var(--card) !important;
-  color: var(--test) !important;
-  font-weight: 700 !important;
+.kpi:hover, .kpi-item:hover {
+  box-shadow: var(--shadow-md) !important;
 }
 
-/* Modern sync button — indigo→purple gradient with hover lift */
-.btn-sync {
+.kpi-val {
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  line-height: 1 !important;
+  margin-bottom: 6px !important;
+}
+
+.kpi-lbl {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: var(--t3) !important;
+}
+
+/* Sync button */
+.btn-sync, [class*="sync-btn"] {
   background: linear-gradient(135deg, #6366F1, #8B5CF6) !important;
+  color: white !important;
   border: none !important;
-  box-shadow: 0 2px 8px rgba(99,102,241,0.3) !important;
+  border-radius: var(--rs) !important;
+  padding: 10px 20px !important;
+  font-weight: 700 !important;
+  font-size: 0.82rem !important;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.35) !important;
+  cursor: pointer !important;
   transition: all 0.2s !important;
 }
+
 .btn-sync:hover {
-  box-shadow: 0 4px 16px rgba(99,102,241,0.5) !important;
+  box-shadow: 0 4px 16px rgba(99,102,241,0.55) !important;
   transform: translateY(-1px) !important;
 }
 
-/* Smooth transitions for theme switching — only the props that flip */
-* {
-  transition: background-color 0.2s, border-color 0.2s, color 0.2s !important;
+/* Product selector pills */
+.prod-pill, .prod-btn {
+  border-radius: 20px !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  border: 1px solid var(--b) !important;
+  background: var(--card) !important;
+  transition: all 0.2s !important;
 }
 
-/* ============================================================
-   DARK-MODE structural overrides
-   ============================================================
-   Surgical fixes for rules in this file that hardcoded
-   light-mode rgba/hex values. Anything already using
-   var(...) flips automatically via the :root token swap. */
-
-/* Body — light dot texture inverts to white-alpha */
-[data-theme="dark"] body {
-  background-image: radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px);
+.prod-pill.active, .prod-btn.active {
+  background: rgba(99,102,241,0.1) !important;
+  border-color: rgba(99,102,241,0.4) !important;
+  color: var(--accent) !important;
 }
-[data-theme="dark"] body::before {
-  background: radial-gradient(ellipse at center, rgba(99,102,241,0.12) 0%, transparent 70%);
-  opacity: 0.55;
+
+/* Section headers */
+.sh, .section-header {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  color: var(--t3) !important;
+  margin-bottom: 12px !important;
+  margin-top: 28px !important;
 }
-[data-theme="dark"] ::selection { background: rgba(99,102,241,0.35); color: #fff; }
 
-/* Sticky bars — translucent dark backdrops instead of light rgba */
-[data-theme="dark"] .hdr { background: rgba(15,17,23,0.82); }
-[data-theme="dark"] .tabs-wrap { background: rgba(15,17,23,0.92); }
+/* Status badges */
+.bdg {
+  border-radius: 6px !important;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  padding: 3px 8px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
 
-/* Hover/active tints that used dark-on-light rgbas */
-[data-theme="dark"] .tab:hover { background: rgba(255,255,255,0.04); }
-[data-theme="dark"] .dtbl th { background: rgba(255,255,255,0.03); }
-[data-theme="dark"] .dtbl td select:hover { background: rgba(255,255,255,0.04); border-color: var(--b); }
+/* Smooth theme transitions */
+body, .hdr, .tabs-wrap, .tab, .cov-card, .prod-card,
+.kpi, .kpi-item, .winner-card, .modal-overlay, .modal {
+  transition: background-color 0.25s ease,
+              border-color 0.25s ease,
+              color 0.25s ease,
+              box-shadow 0.25s ease !important;
+}
 
-/* Toast — original sets background:var(--t1); --t1 is light in dark mode → invisible */
+/* Dark mode specific overrides */
+[data-theme="dark"] .hdr,
+[data-theme="dark"] .tabs-wrap {
+  background: var(--card) !important;
+  border-color: var(--b) !important;
+}
+
+[data-theme="dark"] .skeleton-shimmer {
+  background: linear-gradient(90deg, var(--card) 25%,
+    rgba(255,255,255,0.06) 50%, var(--card) 75%) !important;
+  background-size: 400px 100% !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--card2) !important;
+  border-color: var(--b) !important;
+  color: var(--t1) !important;
+}
+
 [data-theme="dark"] .toast {
-  background: var(--card);
-  color: var(--t1);
-  border: 1px solid var(--b);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.5);
+  background: var(--card2) !important;
+  color: var(--t1) !important;
+  border-color: var(--b) !important;
 }
 
-/* Loading scrim was light rgba — switch to dark */
-[data-theme="dark"] .loading-overlay {
-  background: rgba(15,17,23,0.82);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+/* Theme toggle button */
+#themeToggle {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--b) !important;
+  background: var(--card2) !important;
+  cursor: pointer !important;
+  font-size: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
 }
 
-/* Skeleton highlight was hardcoded #fff — soften on dark */
-[data-theme="dark"] .skeleton {
-  background: linear-gradient(90deg, var(--el) 25%, rgba(255,255,255,0.06) 50%, var(--el) 75%);
-}
-
-/* Scrollbars — light track/thumb invert to white-alpha */
-[data-theme="dark"] ::-webkit-scrollbar-track { background: rgba(0,0,0,0.25); }
-[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
-
-/* Production empty state hatch — dark variant */
-[data-theme="dark"] .prod-empty {
-  background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px);
-  border-color: rgba(255,255,255,0.05);
-}
-
-/* Action group header tint */
-[data-theme="dark"] .action-group-title { background: rgba(255,255,255,0.03); }
-[data-theme="dark"] .action-group-count { background: rgba(255,255,255,0.06); color: var(--t2); }
-
-/* Modal scrim — deeper on dark for contrast */
-[data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.65); }
-[data-theme="dark"] .modal {
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.14);
-}
-
-/* Theme toggle button — color follows --t2 in both modes */
 #themeToggle:hover {
-  border-color: var(--bh);
-  color: var(--t1);
-  background: var(--el);
+  background: var(--el) !important;
+  border-color: var(--bh) !important;
+  transform: scale(1.05) !important;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--b);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--bh); }

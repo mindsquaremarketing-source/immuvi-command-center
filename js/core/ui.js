@@ -452,28 +452,12 @@ function updateTabCounts() {
 }
 
 // ============================================================
-//  THEME TOGGLE — light default with dark mode via [data-theme]
-//  Persisted in localStorage under "theme".
+//  THEME — light only. No dark mode, no toggle.
 // ============================================================
-function toggleTheme() {
-  var current = document.documentElement.getAttribute('data-theme');
-  var next = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  try { localStorage.setItem('theme', next); } catch (e) {}
-  var btn = document.getElementById('themeToggle');
-  if (btn) btn.textContent = next === 'dark' ? '☀️' : '🌙';
-}
-
 function initTheme() {
   document.documentElement.removeAttribute('data-theme');
   localStorage.removeItem('theme');
-  var btn = document.getElementById('themeToggle');
-  if (btn) btn.textContent = '🌙';
 }
 
-// Restore saved theme on page load. ui.js loads near the top of the
-// script chain (after config/utils, before features), and the header —
-// including #themeToggle — is parsed before any <script>, so this can
-// run synchronously without DOMContentLoaded.
 initTheme();
 

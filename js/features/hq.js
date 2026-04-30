@@ -66,7 +66,7 @@ function renderHQ() {
   var kpiEl = document.getElementById('kpiStrip');
   kpiEl.innerHTML =
     '<div class="kpi-strip">' +
-      '<div class="kpi-item kpi-first" data-kpi-index="0" style="border-left:4px solid ' + KPI_COLORS[0] + '"><div class="kpi-val">' + mono(s.total) + '</div><div class="kpi-lbl">Total Creatives</div></div>' +
+      '<div class="kpi-item" data-kpi-index="0" style="border-left:4px solid ' + KPI_COLORS[0] + '"><div class="kpi-val">' + mono(s.total) + '</div><div class="kpi-lbl">Total Creatives</div></div>' +
       '<div class="kpi-item" data-kpi-index="1" style="border-left:4px solid ' + KPI_COLORS[1] + '"><div class="kpi-val kpi-win">' + mono(s.winners) + '</div><div class="kpi-lbl">Winners</div></div>' +
       '<div class="kpi-item" data-kpi-index="2" style="border-left:4px solid ' + KPI_COLORS[2] + '"><div class="kpi-val kpi-test">' + mono(s.testing) + '</div><div class="kpi-lbl">Testing</div></div>' +
       '<div class="kpi-item" data-kpi-index="3" style="border-left:4px solid ' + KPI_COLORS[3] + '"><div class="kpi-val kpi-ready">' + mono(s.ready) + '</div><div class="kpi-lbl">Ready to Launch</div></div>' +

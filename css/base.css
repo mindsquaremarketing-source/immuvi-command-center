@@ -1347,7 +1347,11 @@ body::before{display:none!important}
 .tab.on::after{content:''!important;position:absolute!important;bottom:-1px!important;left:0!important;right:0!important;height:2px!important;background:#4F46E5!important;border-radius:0!important}
 .btn-sync{background:#4F46E5!important;color:#fff!important;border:none!important;border-radius:8px!important;padding:8px 18px!important;font-weight:600!important;font-size:0.8rem!important;box-shadow:0 1px 2px rgba(0,0,0,0.1)!important;transition:all 0.15s!important;cursor:pointer!important}
 .btn-sync:hover{background:#4338CA!important;box-shadow:0 4px 12px rgba(79,70,229,0.3)!important;transform:translateY(-1px)!important}
-.kpi-strip,.kpi-strip>div:first-child,#kpiStrip{background:transparent!important;border:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important}
+/* Wrapper containers only — do NOT include .kpi-strip>div:first-child here:
+   that selector matches the first .kpi-item (since the items are the direct
+   children of .kpi-strip), and {border:none!important} on it has higher
+   specificity than [data-kpi-index="0"], stripping the indigo accent. */
+.kpi-strip,#kpiStrip{background:transparent!important;border:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important}
 .kpi-strip{display:flex!important;gap:14px!important;padding:20px 32px!important}
 .kpi-item{background:#fff!important;border:1px solid var(--b)!important;border-radius:16px!important;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 12px rgba(0,0,0,0.04)!important;padding:18px 18px 14px 22px!important;flex:1!important;position:relative!important;overflow:hidden!important;transition:box-shadow 0.2s,transform 0.2s!important;min-width:0!important}
 .kpi-item:hover{box-shadow:0 6px 20px rgba(0,0,0,0.1)!important;transform:translateY(-2px)!important}

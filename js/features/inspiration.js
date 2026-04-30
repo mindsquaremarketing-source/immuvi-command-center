@@ -1135,22 +1135,28 @@ function renderInspirations() {
       '<td style="white-space:nowrap">'+tagPills+'</td>' +
       // 20. Reuse
       '<td>'+reuseBadge+'</td>' +
-      // 21. Actions — error rows show only the source link; everything else
-      // is hidden because the data is invalid and there's nothing to act on.
+      // 21. Actions — every status now gets a delete button. Error rows also
+      // get a retry button that re-queues the inspiration for the bridge.
+      // Queued rows show the delete as "Cancel & remove from queue" to make
+      // the UX intent obvious.
       '<td class="ins-actions">' +
         (ins.sourceUrl ? '<a href="'+escAttr(ins.sourceUrl)+'" target="_blank" class="ins-icon-btn" title="Open source">&#8599;</a>' : '') +
-        (isError ? '' : (
-          (isQueued ? '' : '<button class="ins-icon-btn" onclick="useInspirationFormat('+insIdQ+')" title="Use this format">+</button>') +
-          ((ins.status==='Classified' && (!ins.angle || !ins.persona))
-            ? '<button class="ins-icon-btn ins-map-btn" onclick="remapInspirationFields('+insIdQ+')" title="Map angle &amp; persona">🗺</button>'
-            : '') +
-          (ins.status==='Classified'
-            ? (_hasEditorTaskFor(ins.id)
-                ? '<button class="ins-icon-btn et-btn done" disabled title="Editor task already created">✓ Done</button>'
-                : '<button class="ins-icon-btn et-btn'+(_etOpenInsId===ins.id?' open':'')+'" onclick="toggleEditorTaskPanel('+insIdQ+')" title="Create editor task">📋 Editor Task</button>')
-            : '') +
-          '<button class="ins-icon-btn" onclick="deleteInspiration('+insIdQ+')" title="Delete" style="color:#ef4444">&#215;</button>'
-        )) +
+        (isError
+          ? '<button class="ins-icon-btn" onclick="retryInspiration('+insIdQ+')" title="Retry classification" style="color:#2563eb">&#x21bb;</button>' +
+            '<button class="ins-icon-btn" onclick="deleteInspiration('+insIdQ+')" title="Delete" style="color:#ef4444">&#215;</button>'
+          : (
+              (isQueued ? '' : '<button class="ins-icon-btn" onclick="useInspirationFormat('+insIdQ+')" title="Use this format">+</button>') +
+              ((ins.status==='Classified' && (!ins.angle || !ins.persona))
+                ? '<button class="ins-icon-btn ins-map-btn" onclick="remapInspirationFields('+insIdQ+')" title="Map angle &amp; persona">🗺</button>'
+                : '') +
+              (ins.status==='Classified'
+                ? (_hasEditorTaskFor(ins.id)
+                    ? '<button class="ins-icon-btn et-btn done" disabled title="Editor task already created">✓ Done</button>'
+                    : '<button class="ins-icon-btn et-btn'+(_etOpenInsId===ins.id?' open':'')+'" onclick="toggleEditorTaskPanel('+insIdQ+')" title="Create editor task">📋 Editor Task</button>')
+                : '') +
+              '<button class="ins-icon-btn" onclick="deleteInspiration('+insIdQ+')" title="'+(isQueued?'Cancel &amp; remove from queue':'Delete')+'" style="color:#ef4444">&#215;</button>'
+            )
+        ) +
       '</td>' +
     '</tr>';
 
@@ -1197,6 +1203,24 @@ function renderInspirations() {
 
     return mainRow + dupeRow + panelRow;
   }).join('');
+}
+
+// Re-queue an inspiration that previously errored. Flips ins.status back to
+// 'Queued' (which is what getQueuedItems / autoPushToBridge filter on) and
+// asks the bridge to pick it up again.
+function retryInspiration(id) {
+  var ins = INSPIRATIONS.find(function(i){ return i.id === id; });
+  if (!ins) return;
+  ins.status = 'Queued';
+  // Clear any leftover error metadata so the row renders cleanly while it
+  // waits for the bridge to start processing again.
+  delete ins._errorMessage;
+  saveInspirations();
+  renderInspirations();
+  if (typeof autoPushToBridge === 'function') autoPushToBridge();
+  if (typeof showInsStatus === 'function') {
+    showInsStatus('success', ins.id + ' re-queued for classification');
+  }
 }
 
 async function deleteInspiration(id) {

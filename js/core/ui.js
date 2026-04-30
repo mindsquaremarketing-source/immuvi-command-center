@@ -465,12 +465,10 @@ function toggleTheme() {
 }
 
 function initTheme() {
-  // Clear any saved dark theme — default to light
-  var saved = 'light';
-  try { localStorage.setItem('theme', 'light'); } catch (e) {}
-  document.documentElement.setAttribute('data-theme', saved);
+  document.documentElement.removeAttribute('data-theme');
+  localStorage.removeItem('theme');
   var btn = document.getElementById('themeToggle');
-  if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+  if (btn) btn.textContent = '🌙';
 }
 
 // Restore saved theme on page load. ui.js loads near the top of the

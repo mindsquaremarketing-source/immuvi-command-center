@@ -1327,334 +1327,46 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .winner-meta-tags { display: flex; gap: 4px; flex-wrap: wrap; }
 .winner-sub { font-size: 0.75rem; color: var(--t2); margin-top: 2px; }
 
-
-body{background:linear-gradient(160deg,#EEF2FF 0%,#F0F4FF 40%,#F5F3FF 100%)!important;min-height:100vh!important;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important}
-.hdr{background:rgba(255,255,255,0.9)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border-bottom:1px solid rgba(224,231,255,0.8)!important;box-shadow:0 1px 0 rgba(79,70,229,0.06),0 4px 20px rgba(79,70,229,0.04)!important;padding:0 28px!important;height:64px!important;position:sticky!important;top:0!important;z-index:200!important}
-.logo-name{font-size:1.15rem!important;font-weight:800!important;background:linear-gradient(135deg,#4F46E5,#7C3AED)!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important;background-clip:text!important;letter-spacing:-0.02em!important}
-.btn-sync{background:linear-gradient(135deg,#4F46E5 0%,#7C3AED 100%)!important;color:#fff!important;border:none!important;border-radius:10px!important;padding:9px 20px!important;font-weight:700!important;font-size:0.82rem!important;box-shadow:0 2px 8px rgba(79,70,229,0.3),0 1px 2px rgba(79,70,229,0.2)!important;cursor:pointer!important;transition:all 0.2s!important}
-.btn-sync:hover{transform:translateY(-2px) scale(1.02)!important;box-shadow:0 6px 20px rgba(79,70,229,0.45)!important}
-.tabs-wrap{background:rgba(255,255,255,0.8)!important;backdrop-filter:blur(12px)!important;border-bottom:1px solid rgba(224,231,255,0.6)!important;padding:0 28px!important}
-.tab{font-size:0.78rem!important;font-weight:600!important;padding:14px 16px!important;color:var(--t2)!important;border:none!important;background:transparent!important;cursor:pointer!important;position:relative!important;transition:color 0.15s!important;white-space:nowrap!important}
-.tab:hover{color:var(--t1)!important}
-.tab.on{color:var(--accent)!important;font-weight:700!important}
-.tab.on::after{content:''!important;position:absolute!important;bottom:0!important;left:8px!important;right:8px!important;height:2px!important;background:linear-gradient(90deg,#4F46E5,#7C3AED)!important;border-radius:2px 2px 0 0!important}
-.kpi,.kpi-item{background:#fff!important;border:1px solid rgba(224,231,255,0.8)!important;border-radius:16px!important;box-shadow:0 1px 3px rgba(79,70,229,0.06),0 4px 16px rgba(79,70,229,0.04)!important;position:relative!important;overflow:hidden!important;transition:all 0.2s!important}
-.kpi::before,.kpi-item::before{content:''!important;position:absolute!important;top:0!important;left:0!important;right:0!important;height:3px!important;background:linear-gradient(90deg,#4F46E5,#7C3AED,#0EA5E9)!important}
-.kpi:hover,.kpi-item:hover{transform:translateY(-3px)!important;box-shadow:0 8px 30px rgba(79,70,229,0.12),0 2px 8px rgba(79,70,229,0.06)!important}
-.kpi-val{font-size:2.1rem!important;font-weight:800!important;font-family:'JetBrains Mono',monospace!important;letter-spacing:-0.03em!important;line-height:1!important}
-.kpi-lbl{font-size:0.68rem!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.1em!important;color:var(--t3)!important;margin-top:6px!important}
-.cov-card,.prod-card,.winner-card,.next-tests-wrapper,.winner-variations-wrapper,.scale-winners-wrapper,.ci-wrapper,#gapBox,#scaleWinnersBox,#winnerVariationsBox{background:#fff!important;border:1px solid rgba(224,231,255,0.8)!important;border-radius:18px!important;box-shadow:0 1px 3px rgba(79,70,229,0.06),0 4px 20px rgba(79,70,229,0.04)!important;transition:all 0.2s!important}
-.cov-card:hover,.winner-card:hover{box-shadow:0 8px 32px rgba(79,70,229,0.1),0 2px 8px rgba(79,70,229,0.05)!important;transform:translateY(-2px)!important}
-.sh{font-size:0.68rem!important;font-weight:800!important;text-transform:uppercase!important;letter-spacing:0.12em!important;color:var(--t3)!important}
-input,select{background:var(--card)!important;border:1.5px solid var(--b)!important;border-radius:var(--rs)!important;color:var(--t1)!important;transition:border-color 0.15s,box-shadow 0.15s!important}
-input:focus,select:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(79,70,229,0.1)!important;outline:none!important}
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(79,70,229,0.2);border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:rgba(79,70,229,0.4)}
+/* =============================================
+   IMMUVI — FINAL DESIGN SYSTEM
+   =============================================
+   One coherent override layer. The :root above this block
+   keeps legacy alpha-pair tokens (--winb, --testbr, etc.)
+   alive; the :root below only overrides surface/text/accent
+   tokens, so badge tints still work. */
+:root{--bg:#F7F8FC;--card:#FFFFFF;--b:#EAECF0;--t1:#111827;--t2:#6B7280;--t3:#9CA3AF;--accent:#4F46E5;--r:16px;--rs:8px}
+body{background:var(--bg)!important;font-family:'Inter',-apple-system,sans-serif!important}
+body::before{display:none!important}
+.hdr{background:#fff!important;border-bottom:1px solid var(--b)!important;box-shadow:none!important;padding:0 32px!important;height:56px!important;position:sticky!important;top:0!important;z-index:100!important}
+.hdr-logo-sub,.logo-tagline,[class*="tagline"]{display:none!important}
+.logo-name{font-size:1rem!important;font-weight:700!important;color:#111827!important;background:none!important;-webkit-text-fill-color:#111827!important}
+.tabs-wrap{background:#fff!important;border-bottom:1px solid var(--b)!important;padding:0 32px!important;box-shadow:none!important}
+.tab{font-size:0.78rem!important;font-weight:500!important;color:#6B7280!important;padding:12px 16px!important;border:none!important;background:none!important;position:relative!important;white-space:nowrap!important}
+.tab:hover{color:#111827!important}
+.tab.on{color:#4F46E5!important;font-weight:600!important}
+.tab.on::after{content:''!important;position:absolute!important;bottom:-1px!important;left:0!important;right:0!important;height:2px!important;background:#4F46E5!important;border-radius:0!important}
+.btn-sync{background:#4F46E5!important;color:#fff!important;border:none!important;border-radius:8px!important;padding:8px 18px!important;font-weight:600!important;font-size:0.8rem!important;box-shadow:0 1px 2px rgba(0,0,0,0.1)!important;transition:all 0.15s!important;cursor:pointer!important}
+.btn-sync:hover{background:#4338CA!important;box-shadow:0 4px 12px rgba(79,70,229,0.3)!important;transform:translateY(-1px)!important}
+.kpi-strip,.kpi-strip>div:first-child,#kpiStrip{background:transparent!important;border:none!important;box-shadow:none!important;border-radius:0!important;overflow:visible!important}
+.kpi-strip{display:flex!important;gap:14px!important;padding:20px 32px!important}
+.kpi-item{background:#fff!important;border:1px solid var(--b)!important;border-radius:16px!important;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 12px rgba(0,0,0,0.04)!important;padding:18px 18px 14px 22px!important;flex:1!important;position:relative!important;overflow:hidden!important;transition:box-shadow 0.2s,transform 0.2s!important;min-width:0!important}
+.kpi-item:hover{box-shadow:0 6px 20px rgba(0,0,0,0.1)!important;transform:translateY(-2px)!important}
+.kpi-item:nth-child(1){border-left:4px solid #6366F1!important}
+.kpi-item:nth-child(2){border-left:4px solid #10B981!important}
+.kpi-item:nth-child(3){border-left:4px solid #6366F1!important}
+.kpi-item:nth-child(4){border-left:4px solid #F59E0B!important}
+.kpi-item:nth-child(5){border-left:4px solid #8B5CF6!important}
+.kpi-item:nth-child(6){border-left:4px solid #0EA5E9!important}
+.kpi-item:nth-child(7){border-left:4px solid #EC4899!important}
+.kpi-item:nth-child(8){border-left:4px solid #14B8A6!important}
+.kpi-val{font-size:2rem!important;font-weight:800!important;letter-spacing:-0.03em!important;line-height:1!important;margin-bottom:6px!important}
+.kpi-lbl{font-size:0.62rem!important;font-weight:600!important;text-transform:uppercase!important;letter-spacing:0.1em!important;color:#9CA3AF!important}
+.cov-card,.prod-card,.winner-card,.next-tests-wrapper,.winner-variations-wrapper,.scale-winners-wrapper,.ci-wrapper,#gapBox,#scaleWinnersBox,#winnerVariationsBox,#competitorIntelBox{background:#fff!important;border:1px solid var(--b)!important;border-radius:16px!important;box-shadow:0 1px 3px rgba(0,0,0,0.06)!important;transition:box-shadow 0.2s,transform 0.2s!important}
+.cov-card:hover,.winner-card:hover{box-shadow:0 6px 20px rgba(0,0,0,0.08)!important;transform:translateY(-2px)!important}
+#productProfileSection,.product-profile-section{background:#fff!important;border:1px solid var(--b)!important;border-radius:16px!important;box-shadow:0 1px 3px rgba(0,0,0,0.06)!important}
+.sh{font-size:0.62rem!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:0.12em!important;color:#9CA3AF!important;background:none!important;-webkit-text-fill-color:#9CA3AF!important}
+input,select{background:#F9FAFB!important;border:1px solid #E5E7EB!important;border-radius:8px!important;color:#111827!important}
+input:focus,select:focus{border-color:#4F46E5!important;box-shadow:0 0 0 3px rgba(79,70,229,0.1)!important;background:#fff!important;outline:none!important}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:2px}
 #themeToggle{display:none!important}
-/* ── STUNNING VISUAL UPGRADE ── */
-body { background: linear-gradient(135deg, #667eea11 0%, #764ba211 50%, #f093fb11 100%), #F8F9FE !important; }
-.kpi, .kpi-item { background: white !important; border-radius: 20px !important; box-shadow: 0 4px 24px rgba(79,70,229,0.08) !important; border: 1px solid rgba(99,102,241,0.08) !important; padding: 20px 18px !important; }
-.kpi-val { font-size: 2.4rem !important; font-weight: 900 !important; letter-spacing: -0.04em !important; }
-.kpi-lbl { font-size: 0.62rem !important; letter-spacing: 0.12em !important; font-weight: 700 !important; }
-.cov-card, .prod-card { border-radius: 20px !important; box-shadow: 0 4px 24px rgba(79,70,229,0.07) !important; border: 1px solid rgba(99,102,241,0.08) !important; }
-.btn-sync { background: linear-gradient(135deg, #4F46E5, #7C3AED) !important; border-radius: 12px !important; padding: 10px 22px !important; font-size: 0.85rem !important; font-weight: 700 !important; box-shadow: 0 4px 15px rgba(79,70,229,0.4) !important; letter-spacing: 0.01em !important; }
-.tab.on { color: #4F46E5 !important; }
-.tab.on::after { background: linear-gradient(90deg,#4F46E5,#7C3AED) !important; height: 3px !important; }
-#gapBox, #scaleWinnersBox, #winnerVariationsBox, #competitorIntelBox, .next-tests-wrapper { border-radius: 20px !important; box-shadow: 0 4px 24px rgba(79,70,229,0.07) !important; border: 1px solid rgba(99,102,241,0.08) !important; }
-
-/* ── RICHER CARDS + GRADIENT SECTION HEADERS + HOVER ANIMATIONS ── */
-
-/* Make product profile card more attractive
-   The HTML uses id="productProfileSection" + class="product-profile-section",
-   so the spec's [id*="prodProfile"] / [class*="prod-profile"] selectors
-   wouldn't match — adding the real selectors so the rule actually lands. */
-#prodProfileCard, .prod-profile-card,
-[id*="prodProfile"], [class*="prod-profile"],
-#productProfileSection, .product-profile-section {
-  background: linear-gradient(135deg, rgba(79,70,229,0.03) 0%, rgba(124,58,237,0.03) 100%) !important;
-  border: 1px solid rgba(99,102,241,0.12) !important;
-  border-radius: 20px !important;
-}
-
-/* Make coverage intelligence cards pop */
-.cov-card {
-  border-radius: 20px !important;
-  border: 1px solid rgba(99,102,241,0.08) !important;
-  box-shadow: 0 4px 24px rgba(79,70,229,0.06) !important;
-  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1) !important;
-}
-.cov-card:hover {
-  transform: translateY(-4px) !important;
-  box-shadow: 0 12px 40px rgba(79,70,229,0.12) !important;
-}
-
-/* Stronger section headers — gradient indigo→purple text */
-.sh {
-  font-size: 0.65rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.15em !important;
-  color: #94A3B8 !important;
-  background: linear-gradient(90deg, #4F46E5, #7C3AED) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
-}
-
-/* Product tags — pill style (kept even though no .prod-tag exists yet,
-   so the look is in place when you add them) */
-.prod-tag {
-  border-radius: 20px !important;
-  padding: 5px 14px !important;
-  font-size: 0.72rem !important;
-  font-weight: 600 !important;
-  border: 1.5px solid rgba(99,102,241,0.2) !important;
-  background: rgba(99,102,241,0.05) !important;
-  transition: all 0.2s !important;
-}
-.prod-tag:hover {
-  background: rgba(99,102,241,0.1) !important;
-  border-color: rgba(99,102,241,0.4) !important;
-}
-.prod-tag.active-prod {
-  background: rgba(99,102,241,0.12) !important;
-  border-color: rgba(99,102,241,0.5) !important;
-  color: #4F46E5 !important;
-}
-
-/* ── DEEP VISUAL POLISH ── */
-.kpi-item { background: linear-gradient(145deg, #ffffff 0%, #f5f3ff 100%) !important; border: 1.5px solid rgba(99,102,241,0.15) !important; border-radius: 20px !important; box-shadow: 0 4px 20px rgba(79,70,229,0.1), inset 0 1px 0 rgba(255,255,255,0.8) !important; }
-.kpi-val { font-size: 2.6rem !important; font-weight: 900 !important; }
-body { background: linear-gradient(145deg, #EEF2FF 0%, #F5F3FF 50%, #EFF6FF 100%) !important; }
-#productProfileSection, .product-profile-section { background: linear-gradient(135deg, #FAFAFF, #F5F3FF) !important; border: 1.5px solid rgba(99,102,241,0.12) !important; }
-.sh { background: linear-gradient(90deg,#4F46E5,#7C3AED) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; font-weight: 900 !important; letter-spacing: 0.15em !important; color: #4F46E5 !important; }
-
-/* ── FINAL KPI CARD FIX ── */
-.kpi-strip { gap: 12px !important; padding: 20px !important; background: transparent !important; }
-.kpi-item { background: linear-gradient(145deg, #ffffff 0%, #f0effe 100%) !important; border: 1.5px solid rgba(99,102,241,0.2) !important; border-radius: 20px !important; box-shadow: 0 6px 24px rgba(79,70,229,0.12) !important; padding: 20px 18px !important; position: relative !important; overflow: hidden !important; }
-.kpi-val { font-size: 2.4rem !important; font-weight: 900 !important; letter-spacing: -0.04em !important; line-height: 1 !important; margin-bottom: 8px !important; }
-body { background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 30%, #F5F3FF 70%, #EFF6FF 100%) !important; min-height: 100vh !important; }
-
-/* ================================================
-   IMMUVI 2025 — COMPLETE MODERN REDESIGN
-   Inspired by: Notion, Linear, Vercel dashboards
-   ================================================ */
-
-/* === LAYOUT === */
-body {
-  background: #F7F8FC !important;
-  font-family: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif !important;
-}
-
-/* === HEADER === */
-.hdr {
-  background: #fff !important;
-  border-bottom: 1px solid #EAECF0 !important;
-  box-shadow: none !important;
-  padding: 0 32px !important;
-  height: 56px !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 100 !important;
-}
-.logo-name {
-  font-size: 1.05rem !important;
-  font-weight: 700 !important;
-  background: none !important;
-  -webkit-text-fill-color: #111827 !important;
-  color: #111827 !important;
-  letter-spacing: -0.01em !important;
-}
-.logo-sub, .logo-tagline, [class*="tagline"], [class*="sub-logo"] {
-  display: none !important;
-}
-
-/* === NAVIGATION === */
-.tabs-wrap {
-  background: #fff !important;
-  border-bottom: 1px solid #EAECF0 !important;
-  padding: 0 32px !important;
-  gap: 0 !important;
-}
-.tab {
-  font-size: 0.78rem !important;
-  font-weight: 500 !important;
-  color: #6B7280 !important;
-  padding: 12px 16px !important;
-  border: none !important;
-  background: none !important;
-  position: relative !important;
-  transition: color 0.15s !important;
-  letter-spacing: 0 !important;
-}
-.tab:hover { color: #111827 !important; }
-.tab.on {
-  color: #4F46E5 !important;
-  font-weight: 600 !important;
-}
-.tab.on::after {
-  content: '' !important;
-  position: absolute !important;
-  bottom: -1px !important;
-  left: 0 !important; right: 0 !important;
-  height: 2px !important;
-  background: #4F46E5 !important;
-  border-radius: 0 !important;
-}
-
-/* === SYNC BUTTON === */
-.btn-sync {
-  background: #4F46E5 !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: 8px !important;
-  padding: 8px 18px !important;
-  font-size: 0.8rem !important;
-  font-weight: 600 !important;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
-  transition: all 0.15s !important;
-}
-.btn-sync:hover {
-  background: #4338CA !important;
-  box-shadow: 0 4px 12px rgba(79,70,229,0.3) !important;
-  transform: translateY(-1px) !important;
-}
-
-/* === KPI STRIP — COLOR CODED CARDS === */
-.kpi-strip {
-  display: flex !important;
-  gap: 16px !important;
-  padding: 24px 32px !important;
-  background: transparent !important;
-}
-.kpi-item {
-  background: #fff !important;
-  border: 1px solid #EAECF0 !important;
-  border-radius: 16px !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
-  padding: 20px 20px 16px !important;
-  flex: 1 !important;
-  position: relative !important;
-  overflow: hidden !important;
-  transition: box-shadow 0.2s, transform 0.2s !important;
-}
-.kpi-item:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
-  transform: translateY(-2px) !important;
-}
-/* Colored left accent bars per metric type */
-.kpi-item:nth-child(1)::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#6366F1; border-radius:16px 0 0 16px; }
-.kpi-item:nth-child(2)::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#10B981; border-radius:16px 0 0 16px; }
-.kpi-item:nth-child(3)::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#6366F1; border-radius:16px 0 0 16px; }
-.kpi-item:nth-child(4)::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#F59E0B; border-radius:16px 0 0 16px; }
-.kpi-item:nth-child(5)::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#8B5CF6; border-radius:16px 0 0 16px; }
-.kpi-item:nth-child(6)::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#0EA5E9; border-radius:16px 0 0 16px; }
-.kpi-item:nth-child(7)::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#EC4899; border-radius:16px 0 0 16px; }
-.kpi-item:nth-child(8)::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:#14B8A6; border-radius:16px 0 0 16px; }
-
-.kpi-val {
-  font-size: 2.2rem !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.04em !important;
-  line-height: 1 !important;
-  margin-bottom: 8px !important;
-  color: #111827 !important;
-}
-.kpi-lbl {
-  font-size: 0.65rem !important;
-  font-weight: 600 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.08em !important;
-  color: #9CA3AF !important;
-}
-
-/* === MAIN CONTENT AREA === */
-.main-pad, #mainContent, .tab-content {
-  padding: 0 32px 32px !important;
-}
-
-/* === SECTION HEADERS === */
-.sh {
-  font-size: 0.65rem !important;
-  font-weight: 700 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.12em !important;
-  color: #9CA3AF !important;
-  background: none !important;
-  -webkit-text-fill-color: #9CA3AF !important;
-  margin-bottom: 12px !important;
-  margin-top: 24px !important;
-}
-
-/* === CARDS === */
-.cov-card, .prod-card, .winner-card,
-.next-tests-wrapper, .winner-variations-wrapper,
-.scale-winners-wrapper, .ci-wrapper,
-#gapBox, #scaleWinnersBox, #winnerVariationsBox,
-#competitorIntelBox, #covGrid, #covGrid > div {
-  background: #fff !important;
-  border: 1px solid #EAECF0 !important;
-  border-radius: 16px !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
-  transition: box-shadow 0.2s !important;
-}
-.cov-card:hover, .winner-card:hover {
-  box-shadow: 0 6px 20px rgba(0,0,0,0.08) !important;
-}
-
-/* === PRODUCT PROFILE CARD === */
-#productProfileSection, .product-profile-section {
-  background: #fff !important;
-  border: 1px solid #EAECF0 !important;
-  border-radius: 16px !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
-}
-
-/* === INPUTS === */
-input, select, textarea {
-  background: #F9FAFB !important;
-  border: 1px solid #E5E7EB !important;
-  border-radius: 8px !important;
-  color: #111827 !important;
-  font-size: 0.82rem !important;
-}
-input:focus, select:focus {
-  border-color: #4F46E5 !important;
-  box-shadow: 0 0 0 3px rgba(79,70,229,0.08) !important;
-  background: #fff !important;
-  outline: none !important;
-}
-
-/* === SCROLLBAR === */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
-
-/* === HIDE THEME TOGGLE === */
-#themeToggle { display: none !important; }
-
-/* Remove all previous gradient body overrides */
-body::before { display: none !important; }
-
-/* Remove outer KPI wrapper box */
-#kpiStrip {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-}
-
-/* The card styling is actually on .kpi-strip (inside #kpiStrip), not the host
-   element — the legacy rule at line 372 set border/box-shadow/border-radius
-   that the modern overhaul didn't fully reset. Strip them so each .kpi-item
-   floats on its own. */
-.kpi-strip {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  overflow: visible !important;
-}

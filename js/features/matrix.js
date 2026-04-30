@@ -60,8 +60,12 @@ function renderMatrixStyle() {
     '#matrixGrid .mx-table{display:grid;gap:0;min-width:100%}' +
     '#matrixGrid .mx-corner,#matrixGrid .mx-ch,#matrixGrid .mx-rh,#matrixGrid .mx-gcell{border-bottom:1px solid var(--b);border-right:1px solid var(--b);padding:8px 10px;background:var(--card)}' +
     '#matrixGrid .mx-corner{background:rgba(0,0,0,0.02);position:sticky;top:0;left:0;z-index:3;font-size:0.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.04em;font-weight:600}' +
-    '#matrixGrid .mx-ch{position:sticky;top:0;z-index:2;background:rgba(0,0,0,0.02);font-size:0.7rem;font-weight:600;color:var(--t1);text-align:left;white-space:nowrap}' +
+    '#matrixGrid .mx-ch{position:sticky;top:0;z-index:2;background:rgba(0,0,0,0.02);font-weight:600;color:var(--t1);writing-mode:vertical-rl;transform:rotate(180deg);height:100px;white-space:nowrap;font-size:0.65rem;padding:8px 6px;display:flex;align-items:flex-start;overflow:hidden}' +
     '#matrixGrid .mx-ch-win{font-family:"JetBrains Mono",monospace;font-size:0.6rem;color:var(--win);margin-left:6px;font-weight:700}' +
+    '#matrixGrid .mx-legend{display:flex;flex-wrap:wrap;gap:12px;align-items:center;font-size:0.68rem;color:var(--t2);padding:8px 14px;background:var(--card);border:1px solid var(--b);border-radius:var(--r)}' +
+    '#matrixGrid .mx-legend-item{display:flex;align-items:center;gap:5px}' +
+    '#matrixGrid .mx-legend-sep{color:var(--b);font-size:1rem}' +
+    '#matrixGrid .mx-legend b{color:var(--t1)}' +
     '#matrixGrid .mx-rh{position:sticky;left:0;z-index:1;background:var(--card);font-size:0.72rem;font-weight:600;color:var(--t1);white-space:nowrap;display:flex;align-items:center;gap:6px}' +
     '#matrixGrid .mx-rh-win{font-family:"JetBrains Mono",monospace;font-size:0.6rem;color:var(--win);font-weight:700}' +
     '#matrixGrid .mx-gcell{cursor:pointer;transition:background .12s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:88px;min-height:54px;position:relative}' +
@@ -334,19 +338,34 @@ function renderMatrix() {
     '<div class="mx-stat"><span class="mx-stat-num gap">' + gapCells + '</span><span class="mx-stat-lbl">Not started</span></div>' +
     '</div>';
 
+  // Legend bar — color key + T/M/B funnel abbreviation map
+  html += '<div class="mx-legend">' +
+    '<span class="mx-legend-item"><span class="mx-dot win"></span> Winner/Scale</span>' +
+    '<span class="mx-legend-item"><span class="mx-dot test"></span> Testing</span>' +
+    '<span class="mx-legend-item"><span class="mx-dot ready"></span> In Progress</span>' +
+    '<span class="mx-legend-item"><span class="mx-dot empty"></span> No ads</span>' +
+    '<span class="mx-legend-sep">·</span>' +
+    '<span class="mx-legend-item"><b>T</b> = Top of Funnel</span>' +
+    '<span class="mx-legend-item"><b>M</b> = Middle of Funnel</span>' +
+    '<span class="mx-legend-item"><b>B</b> = Bottom of Funnel</span>' +
+    '</div>';
+
   // Grid
   html += '<div class="mx-grid-wrap">';
   if (anglesVis.length === 0 || personasVis.length === 0) {
     html += '<div style="padding:32px 16px;text-align:center;color:var(--t3);font-size:0.78rem">No combinations match the current filters.</div>';
   } else {
-    var gridCols = '180px repeat(' + personasVis.length + ', minmax(96px, 1fr))';
+    var gridCols = '160px repeat(' + personasVis.length + ', 110px)';
     html += '<div class="mx-table" style="grid-template-columns:' + gridCols + '">';
 
-    // Header row: corner + persona headers
+    // Header row: corner + persona headers (rotated, name truncated to 15 chars,
+    // full name shown on hover via title attr)
     html += '<div class="mx-corner">Angle \\ Persona</div>';
     personasVis.forEach(function (p) {
       var pw = (model.persWin[p] && model.persWin[p].winners) || 0;
-      html += '<div class="mx-ch">' + esc(p) + (pw ? '<span class="mx-ch-win">' + pw + 'W</span>' : '') + '</div>';
+      var pTrunc = p.length > 15 ? p.substring(0, 15) + '…' : p;
+      html += '<div class="mx-ch" title="' + escAttr(p) + '">' + esc(pTrunc) +
+        (pw ? '<span class="mx-ch-win">' + pw + 'W</span>' : '') + '</div>';
     });
 
     // Body rows

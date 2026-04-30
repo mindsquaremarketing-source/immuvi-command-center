@@ -61,18 +61,19 @@ function renderHQ() {
   if (!P) return;
   var s = P.s;
 
-  // KPI Strip
+  // KPI Strip — inline border-left colors bypass any CSS specificity issues
+  var KPI_COLORS = ['#6366F1','#10B981','#6366F1','#F59E0B','#8B5CF6','#0EA5E9','#EC4899','#14B8A6'];
   var kpiEl = document.getElementById('kpiStrip');
   kpiEl.innerHTML =
     '<div class="kpi-strip">' +
-      '<div class="kpi-item kpi-first" data-kpi-index="0"><div class="kpi-val">' + mono(s.total) + '</div><div class="kpi-lbl">Total Creatives</div></div>' +
-      '<div class="kpi-item" data-kpi-index="1"><div class="kpi-val kpi-win">' + mono(s.winners) + '</div><div class="kpi-lbl">Winners</div></div>' +
-      '<div class="kpi-item" data-kpi-index="2"><div class="kpi-val kpi-test">' + mono(s.testing) + '</div><div class="kpi-lbl">Testing</div></div>' +
-      '<div class="kpi-item" data-kpi-index="3"><div class="kpi-val kpi-ready">' + mono(s.ready) + '</div><div class="kpi-lbl">Ready to Launch</div></div>' +
-      '<div class="kpi-item" data-kpi-index="4"><div class="kpi-val kpi-untested">' + mono(s.notStarted) + '</div><div class="kpi-lbl">Untested</div></div>' +
-      '<div class="kpi-item" data-kpi-index="5"><div class="kpi-val kpi-rate">' + mono(s.winRate.toFixed(1) + '%') + '</div><div class="kpi-lbl">Win Rate</div></div>' +
-      '<div class="kpi-item" data-kpi-index="6"><div class="kpi-val">' + mono(ANGLES.length) + '</div><div class="kpi-lbl">Angles</div></div>' +
-      '<div class="kpi-item" data-kpi-index="7"><div class="kpi-val">' + mono(PERSONAS.length) + '</div><div class="kpi-lbl">Personas</div></div>' +
+      '<div class="kpi-item kpi-first" data-kpi-index="0" style="border-left:4px solid ' + KPI_COLORS[0] + '"><div class="kpi-val">' + mono(s.total) + '</div><div class="kpi-lbl">Total Creatives</div></div>' +
+      '<div class="kpi-item" data-kpi-index="1" style="border-left:4px solid ' + KPI_COLORS[1] + '"><div class="kpi-val kpi-win">' + mono(s.winners) + '</div><div class="kpi-lbl">Winners</div></div>' +
+      '<div class="kpi-item" data-kpi-index="2" style="border-left:4px solid ' + KPI_COLORS[2] + '"><div class="kpi-val kpi-test">' + mono(s.testing) + '</div><div class="kpi-lbl">Testing</div></div>' +
+      '<div class="kpi-item" data-kpi-index="3" style="border-left:4px solid ' + KPI_COLORS[3] + '"><div class="kpi-val kpi-ready">' + mono(s.ready) + '</div><div class="kpi-lbl">Ready to Launch</div></div>' +
+      '<div class="kpi-item" data-kpi-index="4" style="border-left:4px solid ' + KPI_COLORS[4] + '"><div class="kpi-val kpi-untested">' + mono(s.notStarted) + '</div><div class="kpi-lbl">Untested</div></div>' +
+      '<div class="kpi-item" data-kpi-index="5" style="border-left:4px solid ' + KPI_COLORS[5] + '"><div class="kpi-val kpi-rate">' + mono(s.winRate.toFixed(1) + '%') + '</div><div class="kpi-lbl">Win Rate</div></div>' +
+      '<div class="kpi-item" data-kpi-index="6" style="border-left:4px solid ' + KPI_COLORS[6] + '"><div class="kpi-val">' + mono(ANGLES.length) + '</div><div class="kpi-lbl">Angles</div></div>' +
+      '<div class="kpi-item" data-kpi-index="7" style="border-left:4px solid ' + KPI_COLORS[7] + '"><div class="kpi-val">' + mono(PERSONAS.length) + '</div><div class="kpi-lbl">Personas</div></div>' +
     '</div>';
 
   // Coverage Grid

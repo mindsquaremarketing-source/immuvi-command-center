@@ -1353,3 +1353,13 @@ input:focus,select:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3
 ::-webkit-scrollbar-thumb{background:rgba(79,70,229,0.2);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(79,70,229,0.4)}
 #themeToggle{display:none!important}
+/* ── STUNNING VISUAL UPGRADE ── */
+body { background: linear-gradient(135deg, #667eea11 0%, #764ba211 50%, #f093fb11 100%), #F8F9FE !important; }
+.kpi, .kpi-item { background: white !important; border-radius: 20px !important; box-shadow: 0 4px 24px rgba(79,70,229,0.08) !important; border: 1px solid rgba(99,102,241,0.08) !important; padding: 20px 18px !important; }
+.kpi-val { font-size: 2.4rem !important; font-weight: 900 !important; letter-spacing: -0.04em !important; }
+.kpi-lbl { font-size: 0.62rem !important; letter-spacing: 0.12em !important; font-weight: 700 !important; }
+.cov-card, .prod-card { border-radius: 20px !important; box-shadow: 0 4px 24px rgba(79,70,229,0.07) !important; border: 1px solid rgba(99,102,241,0.08) !important; }
+.btn-sync { background: linear-gradient(135deg, #4F46E5, #7C3AED) !important; border-radius: 12px !important; padding: 10px 22px !important; font-size: 0.85rem !important; font-weight: 700 !important; box-shadow: 0 4px 15px rgba(79,70,229,0.4) !important; letter-spacing: 0.01em !important; }
+.tab.on { color: #4F46E5 !important; }
+.tab.on::after { background: linear-gradient(90deg,#4F46E5,#7C3AED) !important; height: 3px !important; }
+#gapBox, #scaleWinnersBox, #winnerVariationsBox, #competitorIntelBox, .next-tests-wrapper { border-radius: 20px !important; box-shadow: 0 4px 24px rgba(79,70,229,0.07) !important; border: 1px solid rgba(99,102,241,0.08) !important; }

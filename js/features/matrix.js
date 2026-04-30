@@ -61,29 +61,29 @@ function renderMatrixStyle() {
     '#matrixGrid .mx-legend-sep{color:var(--b);font-size:1rem}' +
     '#matrixGrid .mx-legend b{color:var(--t1)}' +
     /* ── Cards layout ── */
-    '#matrixGrid .mx-cards{display:flex;flex-direction:column;gap:12px}' +
+    '#matrixGrid .mx-cards{display:flex;flex-direction:column;gap:10px}' +
     '#matrixGrid .mx-no-results{padding:32px 16px;text-align:center;color:var(--t3);font-size:0.78rem;background:var(--card);border:1px dashed var(--b);border-radius:var(--r)}' +
-    '#matrixGrid .mx-angle-card{background:var(--card);border:1px solid var(--b);border-radius:var(--r);padding:12px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 3px rgba(15,23,42,0.04)}' +
-    '#matrixGrid .mx-angle-header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}' +
+    '#matrixGrid .mx-angle-card{background:var(--card);border:1px solid var(--b);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 3px rgba(15,23,42,0.04)}' +
+    '#matrixGrid .mx-angle-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}' +
     '#matrixGrid .mx-angle-name{font-size:0.82rem;font-weight:700;color:var(--t1)}' +
-    '#matrixGrid .mx-angle-count{font-size:0.65rem;color:var(--t3);font-family:"JetBrains Mono",monospace}' +
-    '#matrixGrid .mx-angle-count b{color:var(--win);font-weight:700}' +
+    '#matrixGrid .mx-angle-meta{font-size:0.65rem;color:var(--t3);font-family:"JetBrains Mono",monospace}' +
+    '#matrixGrid .mx-angle-meta b{color:var(--win);font-weight:700}' +
     '#matrixGrid .mx-angle-empty{font-size:0.7rem;color:var(--t3);font-style:italic;padding:4px 0}' +
-    '#matrixGrid .mx-persona-row{display:flex;flex-wrap:wrap;gap:8px}' +
-    '#matrixGrid .mx-persona-pill{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 14px;background:rgba(0,0,0,0.02);border:1px solid var(--b);border-radius:var(--r);cursor:pointer;transition:all .15s;min-width:120px;max-width:180px}' +
-    '#matrixGrid .mx-persona-pill:hover{background:rgba(37,99,235,0.05);border-color:var(--test)}' +
-    '#matrixGrid .mx-persona-pill.selected{background:rgba(37,99,235,0.08);border-color:var(--test);box-shadow:0 0 0 2px rgba(37,99,235,0.15)}' +
-    '#matrixGrid .mx-persona-name{font-size:0.7rem;font-weight:600;color:var(--t1);text-align:center;line-height:1.3;word-break:break-word}' +
-    '#matrixGrid .mx-persona-name .pn-win{display:inline-block;margin-left:4px;font-family:"JetBrains Mono",monospace;font-size:0.6rem;color:var(--win);font-weight:700}' +
-    '#matrixGrid .mx-dots{display:flex;gap:6px;align-items:center}' +
-    '#matrixGrid .mx-dot{width:12px;height:12px;border-radius:50%;background:#cbd5e1;display:inline-block}' +
+    '#matrixGrid .mx-pill-row{display:flex;flex-wrap:wrap;gap:8px}' +
+    '#matrixGrid .mx-pill{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 14px;background:rgba(0,0,0,0.02);border:1px solid var(--b);border-radius:var(--r);cursor:pointer;transition:all .15s;min-width:110px;max-width:160px;text-align:center}' +
+    '#matrixGrid .mx-pill:hover{background:rgba(37,99,235,0.06);border-color:rgba(37,99,235,0.3)}' +
+    '#matrixGrid .mx-pill.selected{background:rgba(37,99,235,0.1);border-color:var(--test);box-shadow:0 0 0 2px rgba(37,99,235,0.15)}' +
+    '#matrixGrid .mx-pill-name{font-size:0.68rem;font-weight:600;color:var(--t1);line-height:1.3;word-break:break-word}' +
+    '#matrixGrid .mx-pill-name .pn-win{display:inline-block;margin-left:4px;font-family:"JetBrains Mono",monospace;font-size:0.6rem;color:var(--win);font-weight:700}' +
+    '#matrixGrid .mx-pill-labels{font-size:0.55rem;color:var(--t3);letter-spacing:0.12em;font-family:monospace}' +
+    '#matrixGrid .mx-dots{display:flex;gap:5px;align-items:center;justify-content:center}' +
+    '#matrixGrid .mx-dot{width:11px;height:11px;border-radius:50%;display:inline-block}' +
     '#matrixGrid .mx-dot.win{background:var(--win)}' +
     '#matrixGrid .mx-dot.test{background:var(--test)}' +
     '#matrixGrid .mx-dot.ready{background:var(--ready)}' +
     '#matrixGrid .mx-dot.empty{background:#cbd5e1}' +
     '#matrixGrid .mx-dot.hl{transform:scale(1.4)}' +
     '#matrixGrid .mx-dot.fade{opacity:0.25}' +
-    '#matrixGrid .mx-dot-labels{font-size:0.55rem;color:var(--t3);font-family:"JetBrains Mono",monospace;letter-spacing:0.1em}' +
     '#matrixGrid .mx-empty{background:var(--card);border:1px dashed var(--b);border-radius:var(--r);padding:48px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}' +
     '#matrixGrid .mx-empty-icon{font-size:1.8rem;color:var(--t3)}' +
     '#matrixGrid .mx-empty-title{font-size:0.95rem;font-weight:600;color:var(--t1)}' +
@@ -385,12 +385,19 @@ function renderMatrixCards(model, anglesVis, personasVis) {
 
 // ================================================
 // renderAngleCard — one angle's card with header + persona pills.
-// Pills hidden by the status filter are dropped from this card;
-// if none remain, an empty state is shown inside the card.
+//
+// Visibility rule (per spec): show ALL personas (even with empty cells)
+// only when no filters are active. As soon as either the status filter
+// or the funnel filter is set, restrict pills to personas where the cell
+// exists AND the cell still passes the status filter — empties get hidden
+// so the user can focus on what matters.
 // ================================================
 function renderAngleCard(angleName, personasVis, model) {
+  var unfiltered = (_mxStatusFilter === 'all' && _mxFunnelFilter === 'ALL');
   var visiblePersonas = personasVis.filter(function (p) {
-    return mxCellMatchesStatus(model.cells[angleName + '||' + p]);
+    var cell = model.cells[angleName + '||' + p];
+    if (!cell) return unfiltered;
+    return mxCellMatchesStatus(cell);
   });
 
   var aw = (model.angleWin[angleName] && model.angleWin[angleName].winners) || 0;
@@ -399,15 +406,15 @@ function renderAngleCard(angleName, personasVis, model) {
   var wLbl = aw > 0 ? ' · <b>' + aw + ' winner' + (aw === 1 ? '' : 's') + '</b>' : '';
 
   var html = '<div class="mx-angle-card">';
-  html += '<div class="mx-angle-header">';
+  html += '<div class="mx-angle-hdr">';
   html += '<span class="mx-angle-name">' + esc(angleName) + '</span>';
-  html += '<span class="mx-angle-count">' + pLbl + wLbl + '</span>';
+  html += '<span class="mx-angle-meta">' + pLbl + wLbl + '</span>';
   html += '</div>';
 
   if (visiblePersonas.length === 0) {
     html += '<div class="mx-angle-empty">No personas with this filter</div>';
   } else {
-    html += '<div class="mx-persona-row">';
+    html += '<div class="mx-pill-row">';
     visiblePersonas.forEach(function (p) {
       html += renderPersonaPill(angleName, p, model.cells[angleName + '||' + p], model);
     });
@@ -428,12 +435,12 @@ function renderPersonaPill(angleName, personaName, cell, model) {
   var stages = ['TOF', 'MOF', 'BOF'];
   var pw = (model.persWin[personaName] && model.persWin[personaName].winners) || 0;
 
-  var html = '<div class="mx-persona-pill' + (isSelected ? ' selected' : '') +
+  var html = '<div class="mx-pill' + (isSelected ? ' selected' : '') +
     '" onclick="mxOpenCell(\'' + escJs(angleName) + '\',\'' + escJs(personaName) + '\')" title="' +
     escAttr(angleName) + ' × ' + escAttr(personaName) + '">';
 
-  html += '<span class="mx-persona-name">' + esc(personaName) +
-    (pw > 0 ? '<span class="pn-win">' + pw + 'W</span>' : '') + '</span>';
+  html += '<div class="mx-pill-name">' + esc(personaName) +
+    (pw > 0 ? '<span class="pn-win">' + pw + 'W</span>' : '') + '</div>';
 
   html += '<div class="mx-dots">';
   for (var i = 0; i < 3; i++) {
@@ -449,7 +456,7 @@ function renderPersonaPill(angleName, personaName, cell, model) {
   }
   html += '</div>';
 
-  html += '<span class="mx-dot-labels">T &middot; M &middot; B</span>';
+  html += '<div class="mx-pill-labels">T &middot; M &middot; B</div>';
   html += '</div>';
   return html;
 }

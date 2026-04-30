@@ -1637,3 +1637,24 @@ input:focus, select:focus {
 
 /* Remove all previous gradient body overrides */
 body::before { display: none !important; }
+
+/* Remove outer KPI wrapper box */
+#kpiStrip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* The card styling is actually on .kpi-strip (inside #kpiStrip), not the host
+   element — the legacy rule at line 372 set border/box-shadow/border-radius
+   that the modern overhaul didn't fully reset. Strip them so each .kpi-item
+   floats on its own. */
+.kpi-strip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+}

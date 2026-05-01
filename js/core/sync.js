@@ -897,6 +897,14 @@ function parseClickUpTask(t) {
   // custom-field tier override both need the original (un-normalized) string.
   var rawStatus = (t.status && t.status.status) || '';
 
+  // Resolve final hypothesis value (custom field beats description-parsed
+  // local var) and reject if it looks like operational notes.
+  creativeHypothesis = extractPlainText(getFieldValue(['creative hypothesis', 'hypothesis', 'creative hypo'])) || creativeHypothesis;
+  var BAD_HYP = /^(SET \d|SCRIPT \d|VERSION \d|ONLY MUSIC|REFER TO|use navigation|I NEED U TO|CRITICAL EXECUTION|1:|2:|3:|hook:|VO |TOF |BOF |MOF |format:|angle:)/i;
+  if (BAD_HYP.test(creativeHypothesis || '')) {
+    creativeHypothesis = null;
+  }
+
   var ad = {
     id: t.id || ('ad-' + Date.now() + '-' + Math.random().toString(36).slice(2,6)),
     _clickupId: t.id,
@@ -914,7 +922,7 @@ function parseClickUpTask(t) {
     creativeStructure: getFieldValue(['creative structure', 'structure', 'creative format', 'format category', 'ad structure']),
     hookType: getFieldValue(['hook type', 'hooktype', 'hook style', 'hook']),
     productionStyle: getFieldValue(['production style', 'productionstyle', 'production type', 'style']),
-    creativeHypothesis: extractPlainText(getFieldValue(['creative hypothesis', 'hypothesis', 'creative hypo'])) || creativeHypothesis,
+    creativeHypothesis: creativeHypothesis,
     creativeUSP: getFieldValue(['creative usp', 'creative_usp', 'usp']),
     notes: getFieldValue(['notes', 'note']),
     adOrigin: 'ClickUp',

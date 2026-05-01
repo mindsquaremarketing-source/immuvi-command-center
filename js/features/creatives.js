@@ -462,8 +462,7 @@ function initTableScrollBar() {
 
   function updatePhantom() {
     var rect = wrap.getBoundingClientRect();
-    var inView = rect.top < window.innerHeight && rect.bottom > 0;
-    phantom.style.display = inView ? 'block' : 'none';
+    phantom.style.display = 'block';
     inner.style.width = wrap.scrollWidth + 'px';
     phantom.style.left = rect.left + 'px';
     phantom.style.width = rect.width + 'px';

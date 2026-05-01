@@ -1408,6 +1408,8 @@ html { overflow-x: hidden !important; }
   overflow-x: auto !important;
   overflow-y: visible !important;
   cursor: default !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #94A3B8 #F1F5F9 !important;
 }
 .creatives-table-wrap::-webkit-scrollbar {
   display: block !important;

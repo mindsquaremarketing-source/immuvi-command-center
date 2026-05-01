@@ -1437,3 +1437,11 @@ input:focus,select:focus{border-color:#4F46E5!important;box-shadow:0 0 0 3px rgb
   scrollbar-width: auto;
   scrollbar-color: #A5B4FC #EEF2FF;
 }
+
+.tabs-wrap {
+  overflow: hidden !important;
+  scrollbar-width: none !important;
+}
+.tabs-wrap::-webkit-scrollbar {
+  display: none !important;
+}

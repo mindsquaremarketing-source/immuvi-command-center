@@ -1405,12 +1405,25 @@ html { overflow-x: hidden !important; }
   height: 0 !important;
 }
 .creatives-table-wrap {
-  overflow-x: scroll !important;
+  overflow-x: auto !important;
   overflow-y: visible !important;
-  cursor: grab !important;
+  cursor: default !important;
 }
-.creatives-table-wrap:active {
-  cursor: grabbing !important;
+.creatives-table-wrap::-webkit-scrollbar {
+  display: block !important;
+  height: 10px !important;
+}
+.creatives-table-wrap::-webkit-scrollbar-track {
+  background: #F1F5F9 !important;
+  border-radius: 5px !important;
+}
+.creatives-table-wrap::-webkit-scrollbar-thumb {
+  background: #94A3B8 !important;
+  border-radius: 5px !important;
+  border: 2px solid #F1F5F9 !important;
+}
+.creatives-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: #4F46E5 !important;
 }
 #panel-creatives {
   overflow-y: scroll !important;

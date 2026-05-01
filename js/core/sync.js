@@ -851,6 +851,15 @@ function parseClickUpTask(t) {
     }
   }
 
+  // Reject description-parsed values that look like operational notes
+  // (production instructions, script labels, etc.) instead of a hypothesis.
+  // Setting to null here lets the saveProductData merge keep whatever's
+  // already in Supabase — typically the AI-classifier's clean value.
+  var BAD_HYP = /^(SET \d|SCRIPT \d|VERSION \d|ONLY MUSIC|REFER TO|use navigation|I NEED U TO|CRITICAL EXECUTION|1:|2:|3:|hook:|VO |TOF |BOF |MOF |format:|angle:)/i;
+  if (BAD_HYP.test(creativeHypothesis || '')) {
+    creativeHypothesis = null;
+  }
+
   // Fallback: parse "Angle × Persona" pattern from task name
   if (!angle && !persona && t.name && t.name.indexOf(' × ') !== -1) {
     var parts = t.name.split(' × ');

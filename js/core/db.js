@@ -71,7 +71,7 @@ var _META_FIELDS = [
 // is currently in Supabase.
 var _CLASSIFIER_OWNED_KEYS = [
   'hookType', 'creativeStructure', 'productionStyle',
-  'creativeModality', 'creativeUSP',
+  'creativeModality', 'creativeHypothesis', 'creativeUSP',
   'notes', '_clickupDocPageUrl', '_clickupDocPageId',
   '_classifiedAt', '_classifiedBy'
 ];

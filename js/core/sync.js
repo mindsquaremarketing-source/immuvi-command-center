@@ -700,7 +700,7 @@ function parseClickUpTask(t) {
   var adLink   = getFieldValue(['inspiration link', 'inspo link', 'ad link', 'adlink', 'ad url', 'adurl', 'creative link', 'reference link']);
   var driveLink = getFieldValue(['drive link', 'google drive', 'gdrive', 'production link', 'google drive link', 'drive']);
   var adType = getFieldValue(['photo/video', 'ad type', 'adtype', 'format type', 'type']);
-  var funnelStage = getFieldValue(['funnel type', 'funnel', 'funnel stage', 'funnelstage', 'stage', 'funnel_stage', 'awarness stage', 'awareness stage', 'awarness_stage', 'awareness level', 'awarness level']);
+  var funnelStage = getFieldValue(['funnel type', 'funnel', 'funnel stage', 'funnelstage', 'stage', 'funnel_stage', 'awarness_stage']);
   var parentAd = getFieldValue(['parent ad', 'parentad', 'parent', 'parent task']);
   var variationNum = getFieldValue(['variation number', 'variationnumber', 'variation #', 'variation']);
 
@@ -902,7 +902,7 @@ function parseClickUpTask(t) {
     creativeStructure: getFieldValue(['creative structure', 'structure', 'creative format', 'format category', 'ad structure']),
     hookType: getFieldValue(['hook type', 'hooktype', 'hook style', 'hook']),
     productionStyle: getFieldValue(['production style', 'productionstyle', 'production type', 'style']),
-    creativeHypothesis: creativeHypothesis || extractPlainText(getFieldValue(['creative hypothesis', 'hypothesis'])),
+    creativeHypothesis: extractPlainText(getFieldValue(['creative hypothesis', 'hypothesis', 'creative hypo'])) || creativeHypothesis,
     creativeUSP: getFieldValue(['creative usp', 'creative_usp', 'usp']),
     notes: getFieldValue(['notes', 'note']),
     adOrigin: 'ClickUp',

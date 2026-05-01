@@ -1445,3 +1445,31 @@ input:focus,select:focus{border-color:#4F46E5!important;box-shadow:0 0 0 3px rgb
 .tabs-wrap::-webkit-scrollbar {
   display: none !important;
 }
+
+#apiKeyInput {
+  max-width: 160px !important;
+  min-width: 0 !important;
+  width: 160px !important;
+}
+
+.hdr {
+  overflow: hidden !important;
+}
+
+.creatives-table-wrap {
+  overflow-x: scroll !important;
+  overflow-y: visible !important;
+}
+
+/* Always show the horizontal scrollbar — never auto-hide */
+.creatives-table-wrap::-webkit-scrollbar {
+  height: 12px !important;
+  display: block !important;
+}
+
+body { overflow-x: hidden !important; }
+html { overflow-x: hidden !important; }
+#panel-creatives {
+  overflow-y: auto !important;
+  max-height: calc(100vh - 120px) !important;
+}

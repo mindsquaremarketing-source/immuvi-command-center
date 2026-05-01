@@ -460,12 +460,15 @@ function initTableScrollBar() {
   phantom.appendChild(inner);
   document.body.appendChild(phantom);
 
+  var panel = document.getElementById('panel-creatives');
+
   function updatePhantom() {
     var rect = wrap.getBoundingClientRect();
+    var panelRect = panel ? panel.getBoundingClientRect() : rect;
     phantom.style.display = 'block';
     inner.style.width = wrap.scrollWidth + 'px';
-    phantom.style.left = rect.left + 'px';
-    phantom.style.width = rect.width + 'px';
+    phantom.style.left = panelRect.left + 'px';
+    phantom.style.width = panelRect.width + 'px';
   }
 
   // Sync scrolling both ways
@@ -476,7 +479,7 @@ function initTableScrollBar() {
     phantom.scrollLeft = wrap.scrollLeft;
   });
 
-  window.addEventListener('scroll', updatePhantom, true);
+  if (panel) panel.addEventListener('scroll', updatePhantom);
   window.addEventListener('resize', updatePhantom);
   updatePhantom();
 }

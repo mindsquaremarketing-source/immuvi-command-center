@@ -19,6 +19,12 @@ function showTab(id, btn) {
     btn.setAttribute('aria-selected', 'true');
   }
   if (id === 'inspiration') checkBridgeStatus();
+  // Phantom horizontal scrollbar belongs to the Creative Tracker only — drop
+  // it when switching to any other tab so it doesn't bleed across the bottom.
+  if (id !== 'creatives') {
+    var phantom = document.getElementById('phantom-scroll');
+    if (phantom) phantom.remove();
+  }
   // Persist active tab so page refresh lands on the same tab
   try { localStorage.setItem('immuvi_active_tab', id); } catch(e) {}
 }

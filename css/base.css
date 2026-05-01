@@ -1374,3 +1374,35 @@ input:focus,select:focus{border-color:#4F46E5!important;box-shadow:0 0 0 3px rgb
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:2px}
 #themeToggle{display:none!important}
+
+/* Fix horizontal scroll cutting off header/nav/toolbar */
+.hdr {
+  position: sticky !important;
+  left: 0 !important;
+  width: 100vw !important;
+  z-index: 200 !important;
+}
+.tabs-wrap {
+  position: sticky !important;
+  left: 0 !important;
+  width: 100vw !important;
+  z-index: 199 !important;
+}
+/* Tracker toolbar stays fixed on horizontal scroll */
+.creatives-toolbar, .tracker-toolbar,
+[class*="tracker"]>div:first-child,
+#panel-creatives>div:first-child {
+  position: sticky !important;
+  left: 0 !important;
+  width: 100vw !important;
+  z-index: 198 !important;
+  background: var(--bg) !important;
+}
+/* Filter row stays fixed too */
+.creatives-filters, .tracker-filters,
+#panel-creatives .filters-row {
+  position: sticky !important;
+  left: 0 !important;
+  width: 100vw !important;
+  background: var(--bg) !important;
+}

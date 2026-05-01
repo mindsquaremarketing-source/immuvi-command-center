@@ -482,5 +482,6 @@ function initTableScrollBar() {
   if (panel) panel.addEventListener('scroll', updatePhantom);
   window.addEventListener('resize', updatePhantom);
   updatePhantom();
+  requestAnimationFrame(updatePhantom);
 }
 

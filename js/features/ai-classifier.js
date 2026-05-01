@@ -56,7 +56,8 @@ window.AIClassifier = {
         '  "funnelType": one of [TOF, MOF, BOF],\n' +
         '  "angle": short descriptive angle (max 50 chars),\n' +
         '  "persona": short target persona (max 50 chars),\n' +
-        '  "creativeUSP": one sentence USP (max 100 chars)\n' +
+        '  "creativeUSP": one sentence USP (max 100 chars),\n' +
+        '  "creativeHypothesis": one sentence describing what this creative tests and why it should work (max 150 chars)\n' +
         '}';
 
       var response;
@@ -144,6 +145,7 @@ window.AIClassifier = {
       angle: result.angle,
       persona: result.persona,
       creativeUSP: result.creativeUSP,
+      creativeHypothesis: result.creativeHypothesis,
       _classifiedBy: 'claude-dashboard-v1',
       _classifiedAt: new Date().toISOString()
     });
@@ -311,14 +313,18 @@ window.AIClassifier = {
     if (!productId) { alert('No active product selected.'); return; }
 
     var resp = await window.SB.from('ads')
-      .select('clickup_task_id, format_name, meta')
+      .select('clickup_task_id, format_name, meta, drive_link')
       .eq('product_id', productId)
-      .is('meta->hookType', null)
       .not('clickup_task_id', 'is', null)
-      .limit(200);
+      .limit(300);
 
-    var rows = (resp && resp.data) || [];
-    var unclassified = rows.map(function (a) {
+    var unclassified = (resp.data || []).filter(function (a) {
+      var meta = a.meta || {};
+      var hyp = meta.creativeHypothesis || '';
+      var badHyp = !hyp || /^(SET \d|SCRIPT \d|VERSION \d|ONLY MUSIC|REFER TO|use navigation)/i.test(hyp);
+      var noHook = !meta.hookType;
+      return noHook || badHyp;
+    }).map(function (a) {
       return { taskId: a.clickup_task_id, taskName: a.format_name || '' };
     });
 

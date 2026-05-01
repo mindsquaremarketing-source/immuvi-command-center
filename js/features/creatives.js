@@ -279,7 +279,11 @@ function renderCreatives() {
     var linkDisplay = truncateUrl(ad.adLink);
     var extIcon = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-left:4px;vertical-align:middle"><path d="M3.5 1H1v10h10V8.5M7 1h4v4M11 1L5.5 6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-    var funnelCls = (ad.funnelStage || '').toLowerCase();
+    var validFunnels = ['TOF', 'MOF', 'BOF'];
+    var displayFunnel = validFunnels.includes(ad.funnelStage) ? ad.funnelStage : '';
+    var funnelCls = displayFunnel === 'TOF' ? 'bdg-tof' :
+                    displayFunnel === 'MOF' ? 'bdg-mof' :
+                    displayFunnel === 'BOF' ? 'bdg-bof' : '';
     var opts = '';
     for (var s = 0; s < STATUSES.length; s++) {
       opts += '<option value="' + escAttr(STATUSES[s]) + '"' + (STATUSES[s] === ad.status ? ' selected' : '') + '>' + esc(STATUSES[s]) + '</option>';
@@ -417,7 +421,7 @@ function renderCreatives() {
       '<td>' + (effectiveAdLink ? '<a class="link-cell" href="' + escAttr(effectiveAdLink) + '" target="_blank" rel="noopener">' + esc(truncateUrl(effectiveAdLink)) + extIcon + '</a>' : '-') + '</td>' +
       '<td>' + (ad.driveLink ? '<a class="drive-link-cell" href="' + escAttr(ad.driveLink) + '" target="_blank" rel="noopener" title="Open Google Drive file"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:3px"><path d="M12 2L2 19h20L12 2z" fill="#4285F4"/><path d="M2 19l5-9 7 12H2z" fill="#0F9D58"/><path d="M19 19l-7-12-5 9h12z" fill="#FBBC05"/></svg>Drive Link</a>' : '<span style="color:var(--t3);font-size:0.62rem">—</span>') + '</td>' +
       '<td>' + esc(ad.adType) + '</td>' +
-      '<td><span class="bdg ' + funnelCls + '">' + esc(ad.funnelStage) + '</span></td>' +
+      '<td><span class="bdg ' + funnelCls + '">' + esc(displayFunnel) + '</span></td>' +
       '<td><select class="fs ' + c.cls + '" onchange="updateCreativeStatus(' + origIdx + ', this.value)">' + opts + '</select></td>' +
       '<td class="ai-date">' + (ad.dateCreated ? (function(ts){ var d=new Date(ts); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); })(ad.dateCreated) : '—') + '</td>' +
       '<td>' + varBadge + '</td>' +

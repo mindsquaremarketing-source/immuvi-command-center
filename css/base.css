@@ -1431,3 +1431,20 @@ html { overflow-x: hidden !important; }
   overflow-y: scroll !important;
   height: calc(100vh - 108px) !important;
 }
+
+#phantom-scroll::-webkit-scrollbar {
+  display: block !important;
+  height: 12px !important;
+}
+#phantom-scroll::-webkit-scrollbar-track {
+  background: #F1F5F9 !important;
+}
+#phantom-scroll::-webkit-scrollbar-thumb {
+  background: #94A3B8 !important;
+  border-radius: 6px !important;
+  border: 2px solid #F1F5F9 !important;
+}
+#phantom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #4F46E5 !important;
+}
+#phantom-scroll { scrollbar-width: thin !important; scrollbar-color: #94A3B8 #F1F5F9 !important; }

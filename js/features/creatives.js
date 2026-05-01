@@ -426,5 +426,59 @@ function renderCreatives() {
     '</tr>';
   }
   bodyEl.innerHTML = html;
+  initTableScrollBar();
+}
+
+function initTableScrollBar() {
+  var wrap = document.querySelector('.creatives-table-wrap');
+  var table = document.querySelector('#creativesTable');
+  if (!wrap || !table) return;
+
+  // Remove old phantom if exists
+  var old = document.getElementById('phantom-scroll');
+  if (old) old.remove();
+
+  // Create a sticky scrollbar at bottom of viewport
+  var phantom = document.createElement('div');
+  phantom.id = 'phantom-scroll';
+  phantom.style.cssText = [
+    'position:fixed',
+    'bottom:0',
+    'left:0',
+    'right:0',
+    'height:12px',
+    'overflow-x:auto',
+    'overflow-y:hidden',
+    'z-index:999',
+    'background:#F8FAFC',
+    'border-top:1px solid #E0E7FF',
+    'display:none'
+  ].join(';');
+
+  var inner = document.createElement('div');
+  inner.style.height = '1px';
+  phantom.appendChild(inner);
+  document.body.appendChild(phantom);
+
+  function updatePhantom() {
+    var rect = wrap.getBoundingClientRect();
+    var inView = rect.top < window.innerHeight && rect.bottom > 0;
+    phantom.style.display = inView ? 'block' : 'none';
+    inner.style.width = wrap.scrollWidth + 'px';
+    phantom.style.left = rect.left + 'px';
+    phantom.style.width = rect.width + 'px';
+  }
+
+  // Sync scrolling both ways
+  phantom.addEventListener('scroll', function() {
+    wrap.scrollLeft = phantom.scrollLeft;
+  });
+  wrap.addEventListener('scroll', function() {
+    phantom.scrollLeft = wrap.scrollLeft;
+  });
+
+  window.addEventListener('scroll', updatePhantom, true);
+  window.addEventListener('resize', updatePhantom);
+  updatePhantom();
 }
 

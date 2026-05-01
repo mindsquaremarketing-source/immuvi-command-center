@@ -1459,17 +1459,30 @@ input:focus,select:focus{border-color:#4F46E5!important;box-shadow:0 0 0 3px rgb
 .creatives-table-wrap {
   overflow-x: scroll !important;
   overflow-y: visible !important;
+  cursor: grab !important;
+  scrollbar-width: none !important;
 }
-
-/* Always show the horizontal scrollbar — never auto-hide */
 .creatives-table-wrap::-webkit-scrollbar {
-  height: 12px !important;
-  display: block !important;
+  display: none !important;
+}
+.creatives-table-wrap:active {
+  cursor: grabbing !important;
 }
 
 body { overflow-x: hidden !important; }
 html { overflow-x: hidden !important; }
 #panel-creatives {
   overflow-y: auto !important;
-  max-height: calc(100vh - 120px) !important;
+  height: calc(100vh - 108px) !important;
+  scrollbar-width: none !important;
+}
+#panel-creatives::-webkit-scrollbar {
+  display: none !important;
+}
+
+.panel {
+  scrollbar-width: none !important;
+}
+.panel::-webkit-scrollbar {
+  display: none !important;
 }

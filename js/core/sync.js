@@ -704,12 +704,15 @@ function parseClickUpTask(t) {
   var parentAd = getFieldValue(['parent ad', 'parentad', 'parent', 'parent task']);
   var variationNum = getFieldValue(['variation number', 'variationnumber', 'variation #', 'variation']);
 
-  // Fallback: extract funnel stage from task name (TOF/MOF/BOF pattern)
+  // Fallback: extract funnel stage from task name (TOF/MOF/BOF pattern).
+  // Order matters — check BOF first, then MOF, then TOF, because a "URGENCY
+  // BOF - COMPARISON" task may also contain "TOF" as a substring elsewhere.
   if (!funnelStage) {
     var nameUpper = (t.name || '').toUpperCase();
-    if (nameUpper.indexOf(' - TOF') !== -1 || nameUpper.indexOf('-TOF') !== -1) funnelStage = 'TOF';
-    else if (nameUpper.indexOf(' - MOF') !== -1 || nameUpper.indexOf('-MOF') !== -1) funnelStage = 'MOF';
-    else if (nameUpper.indexOf(' - BOF') !== -1 || nameUpper.indexOf('-BOF') !== -1) funnelStage = 'BOF';
+    funnelStage =
+      nameUpper.indexOf('BOF') !== -1 ? 'BOF' :
+      nameUpper.indexOf('MOF') !== -1 ? 'MOF' :
+      nameUpper.indexOf('TOF') !== -1 ? 'TOF' : null;
   }
 
   // Fallback: extract persona from task name — ICP: pattern only
@@ -893,7 +896,7 @@ function parseClickUpTask(t) {
     adLink: adLink,
     driveLink: driveLink || '',
     adType: adType || 'Video',
-    funnelStage: funnelStage || 'TOF',
+    funnelStage: funnelStage || null,
     status: mapClickUpStatus(rawStatus),
     angle: angle,
     persona: persona,
